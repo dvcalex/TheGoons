@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
+using EZCameraShake;
 
 public class Player : NetworkBehaviour
 {
@@ -61,5 +62,11 @@ public class Player : NetworkBehaviour
     {
         if(IsOwner)
             Server._instance.DisconnectPlayer_RPC(NetworkObjectId);
+    }
+
+    public void ShakeCamera(float magnitude, float roughness, float fadeInTime, float fadeOutTime)
+    {
+        if (IsOwner)
+            CameraShaker.Instance.ShakeOnce(magnitude, roughness, fadeInTime, fadeOutTime);
     }
 }
