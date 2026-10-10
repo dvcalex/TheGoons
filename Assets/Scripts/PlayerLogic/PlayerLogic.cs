@@ -3,69 +3,60 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class AbilityButtonManager : MonoBehaviour
+public class PlayerLogic : MonoBehaviour
 {
+    public static PlayerLogic Instance; // Singleton reference for easy access
+
     [System.Serializable]
     public class AbilityData
     {
         public string abilityName = "Ability";
-        public float totalCooldownTime = 5f;
+        public float totalCooldownTime = 5f; // Set this to your actual cooldown length in the Inspector
 
         [Header("UI References")]
-        public RawImage iconImage;             // Raw Image for ability icon
-        public Image cooldownOverlay;        // UI Image with Radial 360 Fill
-        public TextMeshProUGUI cooldownText;  // TMP timer text
-        public Button abilityButton;          // UI Button component
+        public RawImage iconImage;
+        public Image cooldownOverlay;
+        public TextMeshProUGUI cooldownText;
 
         [HideInInspector] public float currentCooldown = 0f;
         [HideInInspector] public bool isCoolingDown = false;
     }
 
     [Header("Abilities")]
-    [SerializeField] private AbilityData invisAbility;
     [SerializeField] private AbilityData dashAbility;
 
     [Header("Visual Tuning")]
     [SerializeField] private Color readyColor = Color.white;
     [SerializeField] private Color cooldownColor = new Color(0.4f, 0.4f, 0.4f, 1f);
 
-    private void Start()
+    private void Awake()
     {
-        SetupAbility(invisAbility);
-        SetupAbility(dashAbility);
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
     }
 
-    private void SetupAbility(AbilityData ability)
+    private void Start()
     {
-        if (ability.cooldownOverlay != null) ability.cooldownOverlay.fillAmount = 0f;
-        if (ability.cooldownText != null) ability.cooldownText.gameObject.SetActive(false);
-        if (ability.iconImage != null) ability.iconImage.color = readyColor;
-
-        if (ability.abilityButton != null)
-        {
-            // Automatically hook up the button click event
-            AbilityData targetAbility = ability;
-            ability.abilityButton.onClick.AddListener(() => OnAbilityClicked(targetAbility));
-        }
+        if (dashAbility.cooldownOverlay != null) dashAbility.cooldownOverlay.fillAmount = 0f;
+        if (dashAbility.cooldownText != null) dashAbility.cooldownText.gameObject.SetActive(false);
+        if (dashAbility.iconImage != null) dashAbility.iconImage.color = readyColor;
     }
 
     private void Update()
     {
-        UpdateCooldown(invisAbility);
         UpdateCooldown(dashAbility);
     }
 
-    private void OnAbilityClicked(AbilityData ability)
+    // Call this from your Player Controller when R is pressed and Dash succeeds
+    public void TriggerDashCooldown()
     {
-        if (ability.isCoolingDown) return;
+        if (dashAbility.isCoolingDown) return;
 
-        // Start Cooldown
-        ability.currentCooldown = ability.totalCooldownTime;
-        ability.isCoolingDown = true;
+        dashAbility.currentCooldown = dashAbility.totalCooldownTime;
+        dashAbility.isCoolingDown = true;
 
-        if (ability.abilityButton != null) ability.abilityButton.interactable = false;
-        if (ability.iconImage != null) ability.iconImage.color = cooldownColor;
-        if (ability.cooldownText != null) ability.cooldownText.gameObject.SetActive(true);
+        if (dashAbility.iconImage != null) dashAbility.iconImage.color = cooldownColor;
+        if (dashAbility.cooldownText != null) dashAbility.cooldownText.gameObject.SetActive(true);
     }
 
     private void UpdateCooldown(AbilityData ability)
@@ -74,13 +65,11 @@ public class AbilityButtonManager : MonoBehaviour
 
         ability.currentCooldown -= Time.deltaTime;
 
-        // Update radial fill overlay
         if (ability.cooldownOverlay != null)
         {
             ability.cooldownOverlay.fillAmount = ability.currentCooldown / ability.totalCooldownTime;
         }
 
-        // Update TMP timer text
         if (ability.cooldownText != null)
         {
             if (ability.currentCooldown > 0f)
@@ -94,21 +83,13 @@ public class AbilityButtonManager : MonoBehaviour
             }
         }
 
-        // Check if cooldown finished
         if (ability.currentCooldown <= 0f)
         {
             ability.isCoolingDown = false;
+            if (ability.iconImage != null) ability.iconImage.color = readyColor;
 
-            if (ability.abilityButton != null)
-            {
-                ability.abilityButton.interactable = true;
-                StartCoroutine(PulseOnReady(ability.abilityButton.transform));
-            }
-
-            if (ability.iconImage != null)
-            {
-                ability.iconImage.color = readyColor;
-            }
+            // Optional pulse effect on the icon transform when ready
+            StartCoroutine(PulseOnReady(ability.iconImage.transform));
         }
     }
 
