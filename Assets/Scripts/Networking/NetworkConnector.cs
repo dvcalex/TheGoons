@@ -25,8 +25,6 @@ public class NetworkConnector : MonoBehaviour
     {
         Instantiate(networkDebug, Vector3.zero, Quaternion.identity);
 
-        NetworkManager.Singleton.GetComponent<UnityTransport>().Protocol = UnityTransport.ProtocolType.UnityTransport;
-
         Destroy(gameObject);
     }
 }
