@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "com.hunter-production.new-libre-fracture": {
+      "version": "https://github.com/HunterProduction/unity-libre-fracture-2.0.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.ext.nunit": "1.0.0"
+      },
+      "hash": "374197229591a3946b9d8bce44df882bdd413dbc"
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.12",
       "depth": 0,
