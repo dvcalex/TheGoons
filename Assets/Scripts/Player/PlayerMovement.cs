@@ -1,386 +1,365 @@
-using EZCameraShake;
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
+// Input requests velocity; only forces move the player. No per-limb network state.
+[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class PlayerMovement : NetworkBehaviour
 {
+    [Header("References")]
     public Player _player;
-    //public PlayerInput _input;
+    public Rigidbody rb;
+    public CapsuleCollider capsule;
+    public PlayerMouseLook mouseLook;
+    public Transform playerGFX;
+    public Transform groundCheck;
+    public Animator anim;
 
-    public CharacterController controller;
-    [HideInInspector]
-    public float speed = 12f;
-    float actualSpeed;
-    public float speedChangeTime = 10f;
-    public float runSpeedLossPercent = 0.8f;
+    [Header("Movement feel")]
+    public float walkSpeed = 4.8f;
+    public float crouchWalkSpeed = 2.4f;
+    public float runSpeed = 7.2f;
+    public float runSpeedAir = 7.2f;
+    public float groundAcceleration = 48f;
+    public float airAcceleration = 12f;
+    public float groundDeceleration = 65f;
+    public float directionChangeAcceleration = 75f;
+    [Tooltip("Velocity servo response in 1/seconds. Higher is snappier.")]
+    public float velocityGain = 18f;
+    [Tooltip("Damping on measured acceleration, not input changes (no derivative kick).")]
+    public float velocityDamping = 0.08f;
+    [Tooltip("Zero by default: integral wind-up makes pushing walls feel bad.")]
+    public float velocityIntegralGain = 0f;
+    public float facingSpring = 110f;
+    public float facingDamping = 20f;
 
-    public float walkSpeed = 4f;
-    public float crouchWalkSpeed = 2f;
-    public float runSpeed = 8f;
-    public float runSpeedAir = 8f;
-
-    float currentStamina = 1f;
-    bool rechargingStamina;
-    float rechargeTimer;
+    [Header("Optional stamina")]
+    public bool useStamina;
     public float maxStamina = 1f;
     public float staminaCost = 0.33f;
     public float staminaGain = 0.4f;
     public float staminaRechargeThreshold = 0.25f;
     public float intialRechargeWait = 0.5f;
 
-    public float gravity = -9.81f;
-    public float fallingGravityWeight = 1.5f;
-    public float jumpHeight = 3f;
-    public Transform groundCheck;
-    Vector3 defaultGroundCheckPos;
-    Vector3 crouchGroundCheckPos;
-    public float groundDistance = 0.4f;
-    public LayerMask groundMask;
-    public float crouchHeight = 1f;
-    public float standingHeight = 2f;
-    public float currentChargeState = 0f;
+    [Header("Small jump")]
+    public float gravity = -22f;
+    public float fallingGravityWeight = 1.65f;
+    public float releasedJumpGravityWeight = 2.2f;
+    public float jumpHeight = 0.85f;
+    public float groundedCoyoteTime = 0.12f;
+    public float jumpBufferTime = 0.14f;
 
-    public float groundedCoyoteTime = 0.2f;
-    float groundedTimeLeft;
-
-    public float crouchSpeed = 1f;
-
-    public bool walking;
-    public bool running;
-    public bool aiming;
-
-    Vector3 velocity;
+    [Header("Ground")]
+    [Tooltip("Probe distance below the capsule feet; separate from coyote time.")]
+    public float groundDistance = 0.12f;
+    public LayerMask groundMask = ~0;
     public bool isGrounded;
-    bool actuallyGrounded;
-    public bool hasKnockback;
-    public bool isStunned;
-    public bool crouching;
-    public bool isMoving;
+    public float maximumGroundAngle = 50f;
+    public float groundStickAcceleration = 12f;
 
-    bool locked;
+    [Header("Crouching")]
+    public float crouchHeight = 1.1f;
+    public float standingHeight = 2f;
+    public float crouchSpeed = 7f;
+    public LayerMask ceilingMask = ~0;
 
-    public PlayerMouseLook mouseLook;
+    [Header("State")]
+    public bool walking, running, aiming, crouching, isMoving, hasKnockback, isStunned;
+    public float currentChargeState;
 
-    public Transform playerGFX;
-    public float playerGFXCrouchMultiplier = 0.25f;
-
-    public Animator anim;
-    public string moveXVar = "MoveX";
-    public string moveZVar = "MoveZ";
-    public string jumpTrigger = "Jump";
-
-    float lerpedX;
-    float lerpedZ;
-
-    float jumpCooldown;
-
-    public float animChangeSpeed = 5f;
-
+    [Header("Animation (optional)")]
+    public string moveXVar = "MoveX", moveZVar = "MoveZ", jumpTrigger = "Jump";
+    public float animChangeSpeed = 10f;
     public List<Knockback> _knockbacks = new List<Knockback>();
 
-    // Settings
+    public float CurrentStamina => currentStamina;
+    public float CrouchAmount => Mathf.InverseLerp(standingHeight, crouchHeight, capsule.height);
+    public float FacingYaw { get; private set; }
+    public Vector3 GroundVelocity { get; private set; }
+    public Vector3 RelativeVelocity => rb.linearVelocity - GroundVelocity;
+    public bool HasControl => IsOwner && _player != null;
 
-    private void Start()
+    private Vector2 moveInput;
+    private bool crouchInput, runInput, jumpHeld, locked, jumpConsumed, rechargingStamina;
+    private float currentStamina, rechargeTimer, coyoteLeft, jumpBufferLeft, ignoreGroundLeft;
+    private Vector3 groundNormal = Vector3.up, standingCenter, originalGFXPosition;
+    private readonly RaycastHit[] groundHits = new RaycastHit[16];
+    private readonly Collider[] clearanceHits = new Collider[16];
+    private readonly VelocityServo servo = new VelocityServo();
+    private InputAction moveAction, crouchAction, runAction, jumpAction;
+    private DesktopRagdoll ragdoll;
+
+    private void Awake()
     {
-        groundedTimeLeft = groundedCoyoteTime;
-
-        float percentHeight = crouchHeight / standingHeight;
-
-        defaultGroundCheckPos = groundCheck.localPosition;
-        crouchGroundCheckPos = new Vector3(0f, ((crouchHeight + standingHeight) / 2), 0f);
+        rb = rb != null ? rb : GetComponent<Rigidbody>();
+        capsule = capsule != null ? capsule : GetComponent<CapsuleCollider>();
+        ragdoll = GetComponent<DesktopRagdoll>();
+        rb.useGravity = false;
+        // Stable locomotion body; the attached ragdoll supplies the wobble.
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.solverIterations = 8;
+        rb.solverVelocityIterations = 4;
+        standingCenter = capsule.center;
+        capsule.height = standingHeight;
+        currentStamina = maxStamina;
+        FacingYaw = rb.rotation.eulerAngles.y;
+        if (playerGFX != null) originalGFXPosition = playerGFX.localPosition;
     }
 
-    void Update()
+    private void Update()
     {
-        if (!IsOwner)
-            return;
-
-        if (Player.me == null)
-            return;
-
-        if (controller.enabled == false)
-            return;
-
-        jumpCooldown -= Time.deltaTime;
-
-        float oldHeight = controller.height;
-
-        bool attemptingToCrouch = _player._input.actions["Crouch"].IsPressed(); // Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
-        bool attemptingToRun = _player._input.actions["Run"].IsPressed(); //Input.GetKey(KeyCode.LeftShift);
-        actuallyGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-
-        //actuallyGrounded = Physics.Raycast(groundCheck.position, Vector3.down, groundDistance, groundMask);
-
-        if (!actuallyGrounded)
+        if (!HasControl || _player._input == null || !_player._input.enabled) return;
+        if (moveAction == null)
         {
-            groundedTimeLeft -= Time.deltaTime;
-
-            if (groundedTimeLeft <= 0f)
-                isGrounded = false;
-            else
-                isGrounded = true;
+            var actions = _player._input.actions;
+            moveAction = actions.FindAction("Move");
+            crouchAction = actions.FindAction("Crouch");
+            runAction = actions.FindAction("Run");
+            jumpAction = actions.FindAction("Jump");
         }
-        else
+        moveInput = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
+        crouchInput = crouchAction.IsPressed();
+        runInput = runAction.IsPressed();
+        jumpHeld = jumpAction.IsPressed();
+        if (!locked && !isStunned && jumpAction.WasPressedThisFrame()) jumpBufferLeft = jumpBufferTime;
+        if (anim != null)
         {
-            groundedTimeLeft = groundedCoyoteTime;
-            isGrounded = true;
-        }
-
-        if(anim != null)
+            Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, FacingYaw, 0f)) * RelativeVelocity;
+            anim.SetFloat(moveXVar, local.x / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
+            anim.SetFloat(moveZVar, local.z / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
             anim.SetBool("IsGrounded", isGrounded);
-
-        ProcessKnockback();
-
-        if (attemptingToCrouch)
-        {
-            crouching = true;
-
-            if (running)
-                OnEndRun();
-        }
-        else
-            crouching = false;
-
-        if (attemptingToRun /* && isGrounded */ && !crouching && !aiming)
-            running = true;
-        else
-            running = false;
-
-        if (isGrounded && velocity.y < 0f)
-        {
-            velocity.y = -4f;
-        }
-
-        speed = walkSpeed;
-
-        if (crouching)
-        {
-            controller.height = Mathf.Lerp(controller.height, crouchHeight, crouchSpeed * Time.deltaTime);
-
-            controller.Move(new Vector3(0f, (controller.height - oldHeight) / 2f, 0f));
-            groundCheck.transform.position -= new Vector3(0f, (controller.height - oldHeight) / 2f, 0f);
-
-            speed = crouchWalkSpeed;
-        }
-        else
-        {
-            controller.height = Mathf.Lerp(controller.height, standingHeight, crouchSpeed * Time.deltaTime);
-
-            controller.Move(new Vector3(0f, (controller.height - oldHeight) / 2f, 0f));
-            groundCheck.transform.position -= new Vector3(0f, (controller.height - oldHeight) / 2f, 0f);
-        }
-
-        if(anim != null)
             anim.SetBool("Crouching", crouching);
-
-        if (locked || isStunned)
-        {
-            walking = false;
-            running = false;
-            crouching = false;
-            isMoving = false;
-            return;
         }
+    }
 
-        playerGFX.localPosition = new Vector3(0f, -(controller.height - standingHeight) / 2f, 0f);
-
-        if (running && currentStamina > 0f && !rechargingStamina && isMoving)
+    private void FixedUpdate()
+    {
+        if (!HasControl || rb.isKinematic) return;
+        float dt = Time.fixedDeltaTime;
+        CheckGrounded(dt);
+        ProcessKnockback();
+        if (!locked && !isStunned)
         {
-            currentStamina -= Time.deltaTime * staminaCost;
-
-            if (currentStamina <= 0f)
-            {
-                rechargingStamina = true;
-                rechargeTimer = intialRechargeWait;
-            }
-
-            if (isGrounded)
-                speed = runSpeed;
-            else
-                speed = runSpeedAir;
-
-            OnStartRun();
+            UpdateCrouching(dt);
+            UpdateMovementState(dt);
+            ApplyMovement(dt);
+            ProcessJump();
+            float yawError = Mathf.DeltaAngle(rb.rotation.eulerAngles.y, FacingYaw) * Mathf.Deg2Rad;
+            rb.AddTorque(Vector3.up * Mathf.Clamp(yawError * facingSpring - rb.angularVelocity.y * facingDamping,
+                -180f, 180f), ForceMode.Acceleration);
         }
         else
         {
-            rechargeTimer -= Time.deltaTime;
-
-            if (rechargeTimer <= 0f)
-                currentStamina += Time.deltaTime * staminaGain;
-
-            if (rechargingStamina && currentStamina > staminaRechargeThreshold)
-                rechargingStamina = false;
-
-            OnEndRun();
+            walking = running = isMoving = false;
+            jumpBufferLeft = 0f;
+            servo.Reset();
         }
+        jumpBufferLeft = Mathf.Max(0f, jumpBufferLeft - dt);
+        float weight = rb.linearVelocity.y < 0f ? fallingGravityWeight : (!jumpHeld && jumpConsumed ? releasedJumpGravityWeight : 1f);
+        rb.AddForce(Vector3.up * gravity * weight, ForceMode.Acceleration);
+        if (isGrounded && !jumpConsumed)
+            rb.AddForce(-groundNormal * groundStickAcceleration, ForceMode.Acceleration);
+        if (mouseLook != null)
+            mouseLook.SetZoom(mouseLook.defaultFOV + Mathf.Clamp01(RelativeVelocity.magnitude / runSpeed) * 6f, 35f);
+    }
 
-        currentStamina = Mathf.Clamp01(currentStamina);
-        //Player.me._ui.UpdateStamina(currentStamina, rechargingStamina);
+    private bool IsSelf(Collider other) => other.transform.IsChildOf(transform);
 
-        if (crouching)
-            speed = crouchWalkSpeed;
-
-        Vector2 move2d = _player._input.actions["Move"].ReadValue<Vector2>();
-
-        float x = move2d.x; //Input.GetAxis("Horizontal");
-        float z = move2d.y; //Input.GetAxis("Vertical");
-
-        //if (Player.me._pause.isPaused)
-        //{
-        //    x = 0f;
-        //    z = 0f;
-        //}
-
-        if (!running)
+    private void CheckGrounded(float dt)
+    {
+        ignoreGroundLeft = Mathf.Max(0f, ignoreGroundLeft - dt);
+        // Interpolated Transform positions can lag the physics pose by a tick.
+        Vector3 center = rb.position + rb.rotation * Vector3.Scale(capsule.center, transform.lossyScale);
+        float radius = capsule.radius * Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.z));
+        float halfHeight = Mathf.Max(radius, capsule.height * Mathf.Abs(transform.lossyScale.y) * 0.5f);
+        float probeRadius = radius * 0.9f;
+        Vector3 origin = center - Vector3.up * (halfHeight - radius) + Vector3.up * 0.08f;
+        int count = gameObject.scene.GetPhysicsScene().SphereCast(origin, probeRadius, Vector3.down, groundHits,
+            0.08f + radius - probeRadius + groundDistance, groundMask, QueryTriggerInteraction.Ignore);
+        float nearest = float.PositiveInfinity;
+        isGrounded = false;
+        GroundVelocity = Vector3.zero;
+        groundNormal = Vector3.up;
+        for (int i = 0; i < count && ignoreGroundLeft <= 0f; i++)
         {
-            lerpedX = Mathf.Lerp(lerpedX, x, Time.deltaTime * animChangeSpeed);
-            lerpedZ = Mathf.Lerp(lerpedZ, z, Time.deltaTime * animChangeSpeed);
-
-            if (crouching)
-                lerpedX = lerpedZ;
+            var hit = groundHits[i];
+            if (IsSelf(hit.collider) || hit.distance >= nearest ||
+                Vector3.Dot(hit.normal, Vector3.up) < Mathf.Cos(maximumGroundAngle * Mathf.Deg2Rad)) continue;
+            Vector3 supportVelocity = hit.rigidbody != null ? hit.rigidbody.GetPointVelocity(hit.point) : Vector3.zero;
+            if (rb.linearVelocity.y - supportVelocity.y > 1.5f) continue;
+            nearest = hit.distance;
+            isGrounded = true;
+            groundNormal = hit.normal;
+            GroundVelocity = supportVelocity;
         }
-        else
+        if (isGrounded)
         {
-            lerpedX = Mathf.Lerp(lerpedX, x * 2, Time.deltaTime * animChangeSpeed * 1.5f);
-            lerpedZ = Mathf.Lerp(lerpedZ, z * 2, Time.deltaTime * animChangeSpeed * 1.5f);
+            coyoteLeft = groundedCoyoteTime;
+            jumpConsumed = false;
         }
+        else coyoteLeft = Mathf.Max(0f, coyoteLeft - dt);
+    }
 
-        if(anim != null)
-        {
-            anim.SetFloat(moveXVar, lerpedX);
-            anim.SetFloat(moveZVar, lerpedZ);
-        }
-
-        walking = new Vector2(x, z).magnitude > 0 && !running && !crouching && isGrounded;
-        isMoving = new Vector2(x, z).magnitude > 0;
-
-        Vector3 move = transform.right * x + transform.forward * z;
-
-        if (actualSpeed > walkSpeed + 0.5f)
-            actualSpeed = Mathf.Lerp(actualSpeed, speed, speedChangeTime * runSpeedLossPercent * Time.deltaTime);
-        else
-            actualSpeed = Mathf.Lerp(actualSpeed, speed, speedChangeTime * Time.deltaTime);
-
-        float aimModifier = 1f;
-
-        if (aiming)
-            aimModifier = Mathf.Clamp01((1f - currentChargeState) + 0.65f);
-
-        controller.Move(move.normalized * actualSpeed * aimModifier * Time.deltaTime);
-
-        if (_player._input.actions["Jump"].WasPressedThisFrame() && isGrounded && !crouching && jumpCooldown <= 0f)
+    private void UpdateMovementState(float dt)
+    {
+        isMoving = moveInput.sqrMagnitude > 0.001f;
+        running = runInput && isMoving && !crouching && !aiming &&
+            (!useStamina || (currentStamina > 0f && !rechargingStamina));
+        if (useStamina)
         {
             if (running)
-                OnEndRun();
-
-            jumpCooldown = 0.1f;
-
-            if(anim != null)
-                anim.SetTrigger(jumpTrigger);
-
-            velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
+            {
+                currentStamina = Mathf.Max(0f, currentStamina - staminaCost * dt);
+                rechargeTimer = intialRechargeWait;
+                if (currentStamina <= 0f) { rechargingStamina = true; running = false; }
+            }
+            else
+            {
+                rechargeTimer -= dt;
+                if (rechargeTimer <= 0f) currentStamina = Mathf.Min(maxStamina, currentStamina + staminaGain * dt);
+                if (currentStamina >= staminaRechargeThreshold) rechargingStamina = false;
+            }
         }
-
-        if (!isGrounded && !hasKnockback)
-        {
-            float gravityMultiplier = 1f;
-
-            if (velocity.y < 0f)
-                gravityMultiplier = fallingGravityWeight;
-
-            velocity.y += gravity * gravityMultiplier * Time.deltaTime;
-        }
-
-        controller.Move(velocity * Time.deltaTime);
-
-        mouseLook.SetZoom(mouseLook.defaultFOV + (((actualSpeed * aimModifier) / runSpeed) * 20f));
+        walking = isGrounded && isMoving && !running && !crouching;
     }
 
-    public void SetLock(bool state)
+    private void ApplyMovement(float dt)
     {
-        locked = state;
+        Vector3 direction = Quaternion.Euler(0f, FacingYaw, 0f) * new Vector3(moveInput.x, 0f, moveInput.y);
+        Vector3 planeNormal = isGrounded ? groundNormal : Vector3.up;
+        if (isGrounded) direction = Vector3.ProjectOnPlane(direction, planeNormal).normalized * moveInput.magnitude;
+        float speed = crouching ? crouchWalkSpeed : (running ? (isGrounded ? runSpeed : runSpeedAir) : walkSpeed);
+        if (aiming) speed *= Mathf.Clamp01(1.65f - currentChargeState);
+        Vector3 velocity = Vector3.ProjectOnPlane(RelativeVelocity, planeNormal);
+        // No input in air preserves momentum. Input steers without braking inherited jump speed.
+        if (!isGrounded && !isMoving) { servo.Reset(); return; }
+        Vector3 target = direction * speed;
+        if (!isGrounded && velocity.magnitude > speed)
+            target = direction.normalized * velocity.magnitude * moveInput.magnitude;
+        float limit = !isGrounded ? airAcceleration : !isMoving ? groundDeceleration :
+            Vector3.Dot(direction, velocity) < 0f ? directionChangeAcceleration : groundAcceleration;
+        if (hasKnockback) limit *= 0.3f;
+        Vector3 acceleration = servo.Step(velocity, target, velocityGain, velocityIntegralGain,
+            velocityDamping, limit, dt);
+        rb.AddForce(Vector3.ProjectOnPlane(acceleration, planeNormal), ForceMode.Acceleration);
     }
 
-    void OnStartRun()
+    private void ProcessJump()
     {
-
+        if (jumpBufferLeft <= 0f || jumpConsumed || (!isGrounded && coyoteLeft <= 0f) || crouching) return;
+        jumpBufferLeft = coyoteLeft = 0f;
+        ignoreGroundLeft = 0.16f;
+        jumpConsumed = true;
+        isGrounded = false;
+        float desired = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
+        float change = Mathf.Max(0f, desired - (rb.linearVelocity.y - GroundVelocity.y));
+        // Give every ragdoll body the same jump impulse so joints don't absorb takeoff.
+        Vector3 impulse = Vector3.up * change;
+        rb.AddForce(impulse, ForceMode.VelocityChange);
+        if (ragdoll != null) ragdoll.AddVelocityChange(impulse);
+        if (anim != null) anim.SetTrigger(jumpTrigger);
+        servo.Reset();
     }
 
-    void OnEndRun()
+    private void UpdateCrouching(float dt)
     {
-
+        crouching = crouchInput || !CanStandUp();
+        float height = Mathf.MoveTowards(capsule.height, crouching ? crouchHeight : standingHeight, crouchSpeed * dt);
+        capsule.height = Mathf.Max(capsule.radius * 2f, height);
+        capsule.center = standingCenter - Vector3.up * ((standingHeight - capsule.height) * 0.5f);
+        if (ragdoll == null && playerGFX != null)
+            playerGFX.localPosition = originalGFXPosition - Vector3.up * ((standingHeight - height) * 0.5f);
     }
 
-    public void ResetVelocity() => velocity = Vector3.zero;
+    private bool CanStandUp()
+    {
+        if (capsule.height >= standingHeight - 0.001f) return true;
+        float radius = capsule.radius * Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.z)) * 0.96f;
+        float halfHeight = Mathf.Max(radius, standingHeight * Mathf.Abs(transform.lossyScale.y) * 0.5f - 0.02f);
+        Vector3 center = rb.position + rb.rotation * Vector3.Scale(standingCenter, transform.lossyScale);
+        int count = gameObject.scene.GetPhysicsScene().OverlapCapsule(center - Vector3.up * (halfHeight - radius),
+            center + Vector3.up * (halfHeight - radius), radius, clearanceHits, ceilingMask, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++) if (!IsSelf(clearanceHits[i])) return false;
+        return count < clearanceHits.Length; // A saturated query must never allow standing through a ceiling.
+    }
 
+    public void SetFacingYaw(float yaw) => FacingYaw = Mathf.Repeat(yaw, 360f);
     public void ProcessKnockback()
     {
-        if (_knockbacks.Count <= 0)
+        hasKnockback = _knockbacks.Count > 0;
+        isStunned = false;
+        for (int i = _knockbacks.Count - 1; i >= 0; i--)
         {
-            isStunned = false;
-            hasKnockback = false;
-            return;
+            var knockback = _knockbacks[i];
+            if (!knockback.applied)
+            {
+                Vector3 impulse = knockback.direction.normalized * knockback.intensity;
+                rb.AddForce(impulse, ForceMode.VelocityChange);
+                if (ragdoll != null) ragdoll.AddVelocityChange(impulse);
+                knockback.applied = true;
+                servo.Reset();
+            }
+            isStunned |= knockback.stun;
+            knockback.time -= Time.fixedDeltaTime;
+            if (knockback.time <= 0f) _knockbacks.RemoveAt(i);
         }
-
-        bool stunnedThisFrame = false;
-        hasKnockback = true;
-
-        List<Knockback> dispose = new List<Knockback>();
-
-        foreach (Knockback knockback in _knockbacks)
-        {
-            float realIntensity = knockback.intensity;
-
-            if (knockback.time <= knockback.fadeOutTime)
-                realIntensity *= (knockback.time / knockback.fadeOutTime);
-
-            controller.Move(realIntensity * knockback.direction * Time.deltaTime);
-
-            if (knockback.stun)
-                stunnedThisFrame = true;
-
-            knockback.time -= Time.deltaTime;
-
-            if (knockback.time <= 0f)
-                dispose.Add(knockback);
-        }
-
-        foreach (Knockback knockback in dispose)
-            _knockbacks.Remove(knockback);
-
-        dispose.Clear();
-
-        isStunned = stunnedThisFrame;
     }
 
-    public void AddKnockback(Vector3 direction, float intensity = 2f, bool stunPlayer = false, float time = 0.25f, float fadeOutTime = 0.15f)
+    public void AddKnockback(Vector3 direction, float intensity = 2f, bool stunPlayer = false,
+        float time = 0.25f, float fadeOutTime = 0.15f) =>
+        _knockbacks.Add(new Knockback(direction, intensity, stunPlayer, time, fadeOutTime));
+    public void AddKnockback(Vector3 direction, Knockback knockback) =>
+        AddKnockback(direction, knockback.intensity, knockback.stun, knockback.time, knockback.fadeOutTime);
+    public void ResetVelocity()
     {
-        Knockback k = new Knockback(direction, intensity, stunPlayer, time, fadeOutTime);
-        _knockbacks.Add(k);
+        rb.linearVelocity = rb.angularVelocity = Vector3.zero;
+        servo.Reset();
+        if (ragdoll != null) ragdoll.ResetVelocity();
     }
-
-    public void AddKnockback(Vector3 direction, Knockback knockback) => AddKnockback(direction, knockback.intensity, knockback.stun, knockback.time, knockback.fadeOutTime);
-
     public void MoveTo(Vector3 position)
     {
-        controller.enabled = false;
-        transform.position = position;
-        controller.enabled = true;
+        if (ragdoll != null && ragdoll.Bodies != null) ragdoll.MoveRootTo(position);
+        else rb.position = position;
+        ResetVelocity();
+        coyoteLeft = jumpBufferLeft = 0f;
+        isGrounded = false;
+        GroundVelocity = Vector3.zero;
+        Physics.SyncTransforms();
     }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(groundCheck.position, Vector3.down * groundDistance);
-
-        Gizmos.DrawWireSphere(groundCheck.position, groundDistance);
-    }
-
+    public void SetLock(bool state) { locked = state; moveInput = Vector2.zero; jumpBufferLeft = 0f; servo.Reset(); }
     public bool IsLocked() => locked;
+    private void OnApplicationFocus(bool focused)
+    {
+        if (!focused) { moveInput = Vector2.zero; runInput = crouchInput = jumpHeld = false; jumpBufferLeft = 0f; }
+    }
+}
+
+// Adapted from the Jalopy-Jetstream PID approach: derivative on measurement,
+// filtered collision spikes and conditional integration to prevent wall wind-up.
+public sealed class VelocityServo
+{
+    private Vector3 previous, derivative, integral;
+    private bool initialized;
+    public Vector3 Step(Vector3 current, Vector3 target, float p, float i, float d, float limit, float dt)
+    {
+        if (dt <= 0f) return Vector3.zero;
+        Vector3 error = target - current;
+        Vector3 measured = initialized ? (current - previous) / dt : Vector3.zero;
+        derivative = Vector3.Lerp(derivative, measured, dt / (0.08f + dt));
+        previous = current;
+        initialized = true;
+        Vector3 candidate = Vector3.ClampMagnitude(integral + error * dt, 2f);
+        Vector3 output = p * error + i * candidate - d * derivative;
+        if (output.magnitude <= limit) integral = candidate;
+        else integral = Vector3.zero;
+        // Limit both force and one-tick overshoot; no direct writes to velocity.
+        return Vector3.ClampMagnitude(output, Mathf.Min(limit, error.magnitude / dt));
+    }
+    public void Reset() { initialized = false; previous = derivative = integral = Vector3.zero; }
 }
 
 [System.Serializable]
@@ -388,19 +367,11 @@ public class Knockback
 {
     public Knockback(Vector3 direction, float intensity = 2f, bool stunPlayer = false, float time = 1f, float fadeOutTime = 0.5f)
     {
-        this.direction = direction;
-        this.intensity = intensity;
-        this.stun = stunPlayer;
-        this.time = time;
-        this.fadeOutTime = fadeOutTime;
+        this.direction = direction; this.intensity = intensity; stun = stunPlayer;
+        this.time = time; this.fadeOutTime = fadeOutTime;
     }
-
-    public float intensity;
-    public float time;
-    public float fadeOutTime;
-
-    [HideInInspector]
-    public Vector3 direction;
-
+    public float intensity, time, fadeOutTime;
     public bool stun;
+    [HideInInspector] public Vector3 direction;
+    [HideInInspector] public bool applied;
 }

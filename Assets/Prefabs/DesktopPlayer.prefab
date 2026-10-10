@@ -304,7 +304,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 45688551
+  GlobalObjectIdHash: 2159492774
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -564,8 +564,11 @@ GameObject:
   m_Component:
   - component: {fileID: 8815569425475547774}
   - component: {fileID: 1783135158864127520}
-  - component: {fileID: 8319331776875636598}
   - component: {fileID: 5926500703810798801}
+  - component: {fileID: 6942959392635350103}
+  - component: {fileID: 3833700895584976880}
+  - component: {fileID: 7699332297048472207}
+  - component: {fileID: 910044890123456789}
   m_Layer: 6
   m_Name: Player
   m_TagString: Untagged
@@ -605,74 +608,63 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   ShowTopMostFoldoutHeaderGroup: 1
   _player: {fileID: 2947696790774383646}
-  controller: {fileID: 8319331776875636598}
-  speed: 12
-  speedChangeTime: 10
-  runSpeedLossPercent: 0.8
-  walkSpeed: 4
-  crouchWalkSpeed: 2
-  runSpeed: 8
-  runSpeedAir: 8
+  rb: {fileID: 6942959392635350103}
+  capsule: {fileID: 7699332297048472207}
+  mouseLook: {fileID: 2717954129342030276}
+  playerGFX: {fileID: 2249268156212771176}
+  groundCheck: {fileID: 4983955678583759157}
+  anim: {fileID: 0}
+  walkSpeed: 4.8
+  crouchWalkSpeed: 2.4
+  runSpeed: 7.2
+  runSpeedAir: 7.2
+  groundAcceleration: 48
+  airAcceleration: 12
+  groundDeceleration: 65
+  directionChangeAcceleration: 75
+  velocityGain: 18
+  velocityDamping: 0.08
+  velocityIntegralGain: 0
+  facingSpring: 110
+  facingDamping: 20
+  useStamina: 0
   maxStamina: 1
   staminaCost: 0.33
   staminaGain: 0.4
   staminaRechargeThreshold: 0.25
   intialRechargeWait: 0.5
-  gravity: -20
-  fallingGravityWeight: 1.5
-  jumpHeight: 2
-  groundCheck: {fileID: 4983955678583759157}
-  groundDistance: 0.4
+  gravity: -22
+  fallingGravityWeight: 1.65
+  releasedJumpGravityWeight: 2.2
+  jumpHeight: 0.85
+  groundedCoyoteTime: 0.12
+  jumpBufferTime: 0.14
+  groundDistance: 0.12
   groundMask:
     serializedVersion: 2
-    m_Bits: 8
-  crouchHeight: 1
+    m_Bits: 4294967295
+  isGrounded: 0
+  maximumGroundAngle: 50
+  groundStickAcceleration: 12
+  crouchHeight: 1.1
   standingHeight: 2
-  currentChargeState: 0
-  groundedCoyoteTime: 0.2
-  crouchSpeed: 1
+  crouchSpeed: 7
+  ceilingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   walking: 0
   running: 0
   aiming: 0
-  isGrounded: 0
-  hasKnockback: 0
-  isStunned: 0
   crouching: 0
   isMoving: 0
-  mouseLook: {fileID: 2717954129342030276}
-  playerGFX: {fileID: 2249268156212771176}
-  playerGFXCrouchMultiplier: 0.25
-  anim: {fileID: 0}
+  hasKnockback: 0
+  isStunned: 0
+  currentChargeState: 0
   moveXVar: MoveX
   moveZVar: MoveZ
   jumpTrigger: Jump
-  animChangeSpeed: 5
+  animChangeSpeed: 10
   _knockbacks: []
---- !u!143 &8319331776875636598
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6418211705436806482}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Height: 2
-  m_Radius: 0.5
-  m_SlopeLimit: 65
-  m_StepOffset: 0.3
-  m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &5926500703810798801
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -719,3 +711,90 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!54 &6942959392635350103
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6418211705436806482}
+  serializedVersion: 5
+  m_Mass: 25
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 1
+  m_Constraints: 80
+  m_CollisionDetection: 2
+--- !u!114 &3833700895584976880
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6418211705436806482}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkRigidbody
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkRigidbodyBaseExpanded: 0
+  UseRigidBodyForMotion: 0
+  AutoUpdateKinematicState: 1
+  AutoSetKinematicOnDespawn: 1
+--- !u!136 &7699332297048472207
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6418211705436806482}
+  m_Material: {fileID: 13400000, guid: a18db22ddc486a24fae7100bf0c2210a, type: 2}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &910044890123456789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6418211705436806482}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52a7c904702a4f63bbef6b95eec799a2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::DesktopRagdoll
+  bodyMaterial: {fileID: 2100000, guid: 22ab4467faba4a142a5a906f7917178e, type: 2}
+  headMaterial: {fileID: 2100000, guid: 82249eae7d8a54c40b37f7fc72196801, type: 2}
+  poseSpring: 110
+  poseDamper: 12
+  maximumPoseTorque: 90
+  strideAngle: 28
+  strideLength: 2.5
+  impactRecovery: 5
