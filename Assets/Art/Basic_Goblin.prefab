@@ -790,6 +790,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4958583014315815743}
   - component: {fileID: 3542042244544153147}
+  - component: {fileID: 7172691990419513468}
   m_Layer: 0
   m_Name: Basic_Goblin
   m_TagString: Untagged
@@ -839,6 +840,43 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &7172691990419513468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5603923005264307324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a387414fe8717924baeb387c6900d654, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerRigData
+  rigData:
+  - {fileID: 1058721675113847552}
+  - {fileID: 1298882555100243286}
+  - {fileID: 5928736490347990118}
+  - {fileID: 88545519024032339}
+  - {fileID: 8923173226960585790}
+  - {fileID: 1708673669725874586}
+  - {fileID: 3684365111901359947}
+  - {fileID: 5728181479960218439}
+  - {fileID: 8736211465227543641}
+  - {fileID: 8574799682715949963}
+  - {fileID: 1537568577603825051}
+  - {fileID: 6080856491038685664}
+  - {fileID: 3878692585007378232}
+  - {fileID: 5426413496546946989}
+  - {fileID: 3974809902813126723}
+  - {fileID: 2619318735980589043}
+  - {fileID: 1601666845305535681}
+  - {fileID: 364313458893237181}
+  - {fileID: 873198972827017131}
+  - {fileID: 8055401612010170627}
+  - {fileID: 2277876455021784880}
+  - {fileID: 6377601108553915236}
+  - {fileID: 716988592193703538}
+  lerpThreshold: 0.5
 --- !u!1 &5739419980482228437
 GameObject:
   m_ObjectHideFlags: 0
