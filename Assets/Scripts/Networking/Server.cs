@@ -6,7 +6,8 @@ using System;
 public class Server : NetworkBehaviour
 {
     public static Server _instance;
-    public List<Player> _players = new List<Player>();
+    
+    private List<Player> _players = new List<Player>();
 
     public Action onPlayerListUpdated;
 
@@ -44,7 +45,7 @@ public class Server : NetworkBehaviour
 
     private void OnClientDisconnected(ulong obj)
     {
-        Debug.Log($"Client connected: {obj}");
+        Debug.Log($"Client disconnected: {obj}");
     }
 
     private void PlayerListUpdated()
@@ -101,6 +102,22 @@ public class Server : NetworkBehaviour
         onPlayerListUpdated?.Invoke();
     }
 
+    // ---------- Helper Methods ----------
+
+    public List<Player> GetAllPlayers() => _players;
+    
+    public List<Player> GetClientPlayers()
+    {
+        List<Player> resultSet = new List<Player>();
+
+        resultSet.AddRange(_players.FindAll(p => p.OwnerClientId != NetworkManager.ServerClientId));
+
+        return resultSet;
+    }
+
+    public Player GetHostPlayer() => _players.Find(p => p.OwnerClientId == NetworkManager.ServerClientId);
+
+    public int GetPlayerCount() => _players.Count;
     public ulong[] GetPlayerIds()
     {
         ulong[] playerIds = new ulong[_players.Count];
@@ -110,4 +127,6 @@ public class Server : NetworkBehaviour
 
         return playerIds;
     }
+
+
 }
