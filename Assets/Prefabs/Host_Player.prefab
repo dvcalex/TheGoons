@@ -360,6 +360,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5782319376541299425}
   - component: {fileID: 3517114444487407138}
+  - component: {fileID: 5323988089338862715}
   m_Layer: 0
   m_Name: Host_Player
   m_TagString: Untagged
@@ -410,6 +411,20 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &5323988089338862715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3079129341435963424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f848a4803202426458b3991d715936bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalVrPlayer
+  ShowTopMostFoldoutHeaderGroup: 1
+  origin: {fileID: 1525965653290996151}
 --- !u!1 &4054056925215020604
 GameObject:
   m_ObjectHideFlags: 0
