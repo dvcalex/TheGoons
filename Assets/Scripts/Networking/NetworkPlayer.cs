@@ -4,6 +4,8 @@ using System.Collections;
 
 public class NetworkPlayer : NetworkBehaviour
 {
+    public bool VR_Override = false;
+
     public GameObject player_Host;
     public GameObject player_Client;
 
@@ -28,7 +30,7 @@ public class NetworkPlayer : NetworkBehaviour
 
     public void InitPlayer_Local()
     {
-        if(IsHost)
+        if(IsHost && !VR_Override)
         {
             NetworkObject playerObject = player_Host.GetComponent<NetworkObject>();
             NetworkManager.Singleton.SpawnManager.InstantiateAndSpawn(playerObject, NetworkObject.OwnerClientId, true, true, false, transform.position, Quaternion.identity);
