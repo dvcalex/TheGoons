@@ -133,7 +133,7 @@ GameObject:
   - component: {fileID: 3146332}
   - component: {fileID: 3146331}
   - component: {fileID: 3146330}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk43
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -482,7 +482,7 @@ GameObject:
   - component: {fileID: 13833975}
   - component: {fileID: 13833974}
   - component: {fileID: 13833973}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk28
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1603,7 +1603,7 @@ GameObject:
   - component: {fileID: 41956330}
   - component: {fileID: 41956329}
   - component: {fileID: 41956328}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk41
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1759,7 +1759,7 @@ GameObject:
   - component: {fileID: 43930505}
   - component: {fileID: 43930504}
   - component: {fileID: 43930503}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2494,7 +2494,7 @@ GameObject:
   - component: {fileID: 82618332}
   - component: {fileID: 82618331}
   - component: {fileID: 82618330}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk15
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2650,7 +2650,7 @@ GameObject:
   - component: {fileID: 87618439}
   - component: {fileID: 87618438}
   - component: {fileID: 87618437}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk48
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3385,7 +3385,7 @@ GameObject:
   - component: {fileID: 149776091}
   - component: {fileID: 149776090}
   - component: {fileID: 149776089}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk8
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3927,7 +3927,7 @@ GameObject:
   - component: {fileID: 195553538}
   - component: {fileID: 195553537}
   - component: {fileID: 195553536}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk22
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4276,7 +4276,7 @@ GameObject:
   - component: {fileID: 220090040}
   - component: {fileID: 220090039}
   - component: {fileID: 220090038}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk12
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4432,7 +4432,7 @@ GameObject:
   - component: {fileID: 241889713}
   - component: {fileID: 241889712}
   - component: {fileID: 241889711}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk32
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4781,7 +4781,7 @@ GameObject:
   - component: {fileID: 261475845}
   - component: {fileID: 261475844}
   - component: {fileID: 261475843}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_Fractured
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4830,7 +4830,7 @@ MonoBehaviour:
   totalMass: 0
   jointBreakForce: 0
   anchored: 1
-  freezeConnectedChunks: 0
+  freezeConnectedChunks: 1
   startAsleep: 1
 --- !u!65 &261475845
 BoxCollider:
@@ -4846,7 +4846,7 @@ BoxCollider:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_LayerOverridePriority: 0
+  m_LayerOverridePriority: 1
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
@@ -5004,7 +5004,7 @@ GameObject:
   - component: {fileID: 269573473}
   - component: {fileID: 269573472}
   - component: {fileID: 269573471}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk60
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5160,7 +5160,7 @@ GameObject:
   - component: {fileID: 296019176}
   - component: {fileID: 296019175}
   - component: {fileID: 296019174}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk50
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5316,7 +5316,7 @@ GameObject:
   - component: {fileID: 310152156}
   - component: {fileID: 310152155}
   - component: {fileID: 310152154}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk53
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5472,7 +5472,7 @@ GameObject:
   - component: {fileID: 311310621}
   - component: {fileID: 311310620}
   - component: {fileID: 311310619}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk44
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5628,7 +5628,7 @@ GameObject:
   - component: {fileID: 318578277}
   - component: {fileID: 318578276}
   - component: {fileID: 318578275}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk51
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5977,7 +5977,7 @@ GameObject:
   - component: {fileID: 342861333}
   - component: {fileID: 342861332}
   - component: {fileID: 342861331}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk62
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6133,7 +6133,7 @@ GameObject:
   - component: {fileID: 359438985}
   - component: {fileID: 359438984}
   - component: {fileID: 359438983}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6482,7 +6482,7 @@ GameObject:
   - component: {fileID: 388174820}
   - component: {fileID: 388174819}
   - component: {fileID: 388174818}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk34
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6638,7 +6638,7 @@ GameObject:
   - component: {fileID: 418458890}
   - component: {fileID: 418458889}
   - component: {fileID: 418458888}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk26
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -6987,7 +6987,7 @@ GameObject:
   - component: {fileID: 460666439}
   - component: {fileID: 460666438}
   - component: {fileID: 460666437}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk58
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7143,7 +7143,7 @@ GameObject:
   - component: {fileID: 505718731}
   - component: {fileID: 505718730}
   - component: {fileID: 505718729}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7492,7 +7492,7 @@ GameObject:
   - component: {fileID: 625622210}
   - component: {fileID: 625622209}
   - component: {fileID: 625622208}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk64
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7983,7 +7983,7 @@ GameObject:
   - component: {fileID: 654454570}
   - component: {fileID: 654454569}
   - component: {fileID: 654454568}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8332,7 +8332,7 @@ GameObject:
   - component: {fileID: 688748714}
   - component: {fileID: 688748713}
   - component: {fileID: 688748712}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk17
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -8488,7 +8488,7 @@ GameObject:
   - component: {fileID: 706125866}
   - component: {fileID: 706125865}
   - component: {fileID: 706125864}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk29
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9030,7 +9030,7 @@ GameObject:
   - component: {fileID: 793558407}
   - component: {fileID: 793558406}
   - component: {fileID: 793558405}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk20
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9572,7 +9572,7 @@ GameObject:
   - component: {fileID: 863063645}
   - component: {fileID: 863063644}
   - component: {fileID: 863063643}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk16
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9921,7 +9921,7 @@ GameObject:
   - component: {fileID: 892770578}
   - component: {fileID: 892770577}
   - component: {fileID: 892770576}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk37
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10656,7 +10656,7 @@ GameObject:
   - component: {fileID: 953261472}
   - component: {fileID: 953261471}
   - component: {fileID: 953261470}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11005,7 +11005,7 @@ GameObject:
   - component: {fileID: 1017114970}
   - component: {fileID: 1017114969}
   - component: {fileID: 1017114968}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk24
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11547,7 +11547,7 @@ GameObject:
   - component: {fileID: 1067330085}
   - component: {fileID: 1067330084}
   - component: {fileID: 1067330083}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk61
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11896,7 +11896,7 @@ GameObject:
   - component: {fileID: 1105845989}
   - component: {fileID: 1105845988}
   - component: {fileID: 1105845987}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk59
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12052,7 +12052,7 @@ GameObject:
   - component: {fileID: 1106311819}
   - component: {fileID: 1106311818}
   - component: {fileID: 1106311817}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk63
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12208,7 +12208,7 @@ GameObject:
   - component: {fileID: 1129273711}
   - component: {fileID: 1129273710}
   - component: {fileID: 1129273709}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk25
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12364,7 +12364,7 @@ GameObject:
   - component: {fileID: 1132163866}
   - component: {fileID: 1132163865}
   - component: {fileID: 1132163864}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk52
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12520,7 +12520,7 @@ GameObject:
   - component: {fileID: 1137198630}
   - component: {fileID: 1137198629}
   - component: {fileID: 1137198628}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk46
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12676,7 +12676,7 @@ GameObject:
   - component: {fileID: 1141754080}
   - component: {fileID: 1141754079}
   - component: {fileID: 1141754078}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk49
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12832,7 +12832,7 @@ GameObject:
   - component: {fileID: 1155824581}
   - component: {fileID: 1155824580}
   - component: {fileID: 1155824579}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk42
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -13953,7 +13953,7 @@ GameObject:
   - component: {fileID: 1255528689}
   - component: {fileID: 1255528688}
   - component: {fileID: 1255528687}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk56
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14109,7 +14109,7 @@ GameObject:
   - component: {fileID: 1272016514}
   - component: {fileID: 1272016513}
   - component: {fileID: 1272016512}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk55
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14265,7 +14265,7 @@ GameObject:
   - component: {fileID: 1282652276}
   - component: {fileID: 1282652275}
   - component: {fileID: 1282652274}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk40
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14421,7 +14421,7 @@ GameObject:
   - component: {fileID: 1337874201}
   - component: {fileID: 1337874200}
   - component: {fileID: 1337874199}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk27
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15542,7 +15542,7 @@ GameObject:
   - component: {fileID: 1401004960}
   - component: {fileID: 1401004959}
   - component: {fileID: 1401004958}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk9
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -15698,7 +15698,7 @@ GameObject:
   - component: {fileID: 1436628136}
   - component: {fileID: 1436628135}
   - component: {fileID: 1436628134}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16047,7 +16047,7 @@ GameObject:
   - component: {fileID: 1443531040}
   - component: {fileID: 1443531039}
   - component: {fileID: 1443531038}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk54
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16203,7 +16203,7 @@ GameObject:
   - component: {fileID: 1450592774}
   - component: {fileID: 1450592773}
   - component: {fileID: 1450592772}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk38
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16745,7 +16745,7 @@ GameObject:
   - component: {fileID: 1515374075}
   - component: {fileID: 1515374074}
   - component: {fileID: 1515374073}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk57
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16901,7 +16901,7 @@ GameObject:
   - component: {fileID: 1530924591}
   - component: {fileID: 1530924590}
   - component: {fileID: 1530924589}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk39
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17057,7 +17057,7 @@ GameObject:
   - component: {fileID: 1577258672}
   - component: {fileID: 1577258671}
   - component: {fileID: 1577258670}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk21
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17199,110 +17199,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1577258668}
   m_Mesh: {fileID: 454575622}
---- !u!1001 &1590759530
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 3171711186460699755, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: anchored
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3171711186460699755, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: startAsleep
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3171711186460699755, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: freezeConnectedChunks
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.35
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4710341930314669978, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7621457624159498528, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      propertyPath: m_Name
-      value: Cube_Fractured
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7621457624159498528, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1590759532}
-  m_SourcePrefab: {fileID: 100100000, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
---- !u!1 &1590759531 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7621457624159498528, guid: 1c223baea18583d4ca42671fc54794d4, type: 3}
-  m_PrefabInstance: {fileID: 1590759530}
-  m_PrefabAsset: {fileID: 0}
---- !u!54 &1590759532
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1590759531}
-  serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
 --- !u!1 &1593292382
 GameObject:
   m_ObjectHideFlags: 0
@@ -17317,7 +17213,7 @@ GameObject:
   - component: {fileID: 1593292386}
   - component: {fileID: 1593292385}
   - component: {fileID: 1593292384}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk23
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17586,7 +17482,7 @@ GameObject:
   - component: {fileID: 1609251830}
   - component: {fileID: 1609251829}
   - component: {fileID: 1609251828}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk47
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17742,7 +17638,7 @@ GameObject:
   - component: {fileID: 1613246275}
   - component: {fileID: 1613246274}
   - component: {fileID: 1613246273}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk13
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -18091,7 +17987,7 @@ GameObject:
   - component: {fileID: 1626900114}
   - component: {fileID: 1626900113}
   - component: {fileID: 1626900112}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk35
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -18440,7 +18336,7 @@ GameObject:
   - component: {fileID: 1650625621}
   - component: {fileID: 1650625620}
   - component: {fileID: 1650625619}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk45
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19495,7 +19391,7 @@ GameObject:
   - component: {fileID: 1725305878}
   - component: {fileID: 1725305877}
   - component: {fileID: 1725305876}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk7
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19844,7 +19740,7 @@ GameObject:
   - component: {fileID: 1758425679}
   - component: {fileID: 1758425678}
   - component: {fileID: 1758425677}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk36
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -20000,7 +19896,7 @@ GameObject:
   - component: {fileID: 1803483401}
   - component: {fileID: 1803483400}
   - component: {fileID: 1803483399}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk31
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -20156,7 +20052,7 @@ GameObject:
   - component: {fileID: 1853594278}
   - component: {fileID: 1853594277}
   - component: {fileID: 1853594276}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk33
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -20835,7 +20731,7 @@ GameObject:
   - component: {fileID: 1871124643}
   - component: {fileID: 1871124642}
   - component: {fileID: 1871124641}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk18
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -20991,7 +20887,7 @@ GameObject:
   - component: {fileID: 1904025427}
   - component: {fileID: 1904025426}
   - component: {fileID: 1904025425}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk11
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21533,7 +21429,7 @@ GameObject:
   - component: {fileID: 1983084456}
   - component: {fileID: 1983084455}
   - component: {fileID: 1983084454}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk10
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22075,7 +21971,7 @@ GameObject:
   - component: {fileID: 1994677177}
   - component: {fileID: 1994677176}
   - component: {fileID: 1994677175}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22231,7 +22127,7 @@ GameObject:
   - component: {fileID: 1995797100}
   - component: {fileID: 1995797099}
   - component: {fileID: 1995797098}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk14
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22773,7 +22669,7 @@ GameObject:
   - component: {fileID: 2040611538}
   - component: {fileID: 2040611537}
   - component: {fileID: 2040611536}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk30
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23315,7 +23211,7 @@ GameObject:
   - component: {fileID: 2082232571}
   - component: {fileID: 2082232570}
   - component: {fileID: 2082232569}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube2_FracturedPreview_Chunk19
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23656,7 +23552,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 1854848097}
   - {fileID: 1654109660}
-  - {fileID: 1590759530}
   - {fileID: 652354869}
   - {fileID: 1593382083}
   - {fileID: 261475848}
