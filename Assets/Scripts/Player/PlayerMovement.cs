@@ -17,6 +17,9 @@ public class PlayerMovement : NetworkBehaviour
     public Transform groundCheck;
     public Animator anim;
 
+    float currentAnimationSpeed = 0f;
+    float desiredAnimationSpeed = 0f;
+
     [Header("Movement feel")]
     public float walkSpeed = 4.8f;
     public float crouchWalkSpeed = 2.4f;
@@ -210,14 +213,32 @@ public class PlayerMovement : NetworkBehaviour
             Dash();
 
         if (!locked && !isStunned && jumpAction.WasPressedThisFrame()) jumpBufferLeft = jumpBufferTime;
-        if (anim != null)
+        //if (anim != null)
+        //{
+        //    Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, FacingYaw, 0f)) * RelativeVelocity;
+        //    anim.SetFloat(moveXVar, local.x / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
+        //    anim.SetFloat(moveZVar, local.z / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
+        //    anim.SetBool("IsGrounded", isGrounded);
+        //    anim.SetBool("Crouching", crouching);
+        //}
+
+        if (runAction.IsPressed())
         {
-            Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, FacingYaw, 0f)) * RelativeVelocity;
-            anim.SetFloat(moveXVar, local.x / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
-            anim.SetFloat(moveZVar, local.z / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
-            anim.SetBool("IsGrounded", isGrounded);
-            anim.SetBool("Crouching", crouching);
+            desiredAnimationSpeed = 1f;
         }
+        else if (walking)
+        {
+            desiredAnimationSpeed = 0.5f;
+        }
+        else
+        {
+            desiredAnimationSpeed = 0f;
+        }
+
+        currentAnimationSpeed = Mathf.Lerp(currentAnimationSpeed, desiredAnimationSpeed, 1f - Mathf.Exp(-animChangeSpeed * Time.deltaTime));
+
+        anim.SetFloat("Speed", currentAnimationSpeed);
+
     }
 
     private void FixedUpdate()
