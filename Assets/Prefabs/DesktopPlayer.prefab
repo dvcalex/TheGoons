@@ -619,10 +619,10 @@ MonoBehaviour:
   runSpeed: 7.2
   runSpeedAir: 7.2
   groundAcceleration: 48
-  airAcceleration: 12
+  airAcceleration: 48
   groundDeceleration: 65
   directionChangeAcceleration: 75
-  velocityGain: 18
+  velocityGain: 40
   velocityDamping: 0.08
   velocityIntegralGain: 0
   facingSpring: 110
@@ -636,7 +636,7 @@ MonoBehaviour:
   gravity: -22
   fallingGravityWeight: 1.65
   releasedJumpGravityWeight: 2.2
-  jumpHeight: 0.85
+  jumpHeight: 1.7
   groundedCoyoteTime: 0.12
   jumpBufferTime: 0.14
   groundDistance: 0.12
@@ -788,7 +788,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52a7c904702a4f63bbef6b95eec799a2, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DesktopRagdoll
   bodyMaterial: {fileID: 2100000, guid: 22ab4467faba4a142a5a906f7917178e, type: 2}
   headMaterial: {fileID: 2100000, guid: 82249eae7d8a54c40b37f7fc72196801, type: 2}
