@@ -197,6 +197,9 @@ public class PlayerMovement : NetworkBehaviour
 
     private void Update()
     {
+        if (!IsOwner)
+            return;
+
         //Debug.Log("Ragdoll State: " + Player.me._ragdollManager.isRagdoll);
         anim.SetBool("Enabled", !Player.me._ragdollManager.isRagdoll);
 
@@ -223,20 +226,20 @@ public class PlayerMovement : NetworkBehaviour
             Dash();
 
         if (!locked && !isStunned && jumpAction.WasPressedThisFrame()) jumpBufferLeft = jumpBufferTime;
-        //if (anim != null)
-        //{
-        //    Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, FacingYaw, 0f)) * RelativeVelocity;
-        //    anim.SetFloat(moveXVar, local.x / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
-        //    anim.SetFloat(moveZVar, local.z / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
-        //    anim.SetBool("IsGrounded", isGrounded);
-        //    anim.SetBool("Crouching", crouching);
-        //}
+        if (anim != null)
+        {
+            //Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, FacingYaw, 0f)) * RelativeVelocity;
+            //anim.SetFloat(moveXVar, local.x / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
+            //anim.SetFloat(moveZVar, local.z / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
+            //anim.SetBool("IsGrounded", isGrounded);
+            anim.SetBool("Crouching", crouching);
+        }
 
         if (runAction.IsPressed())
         {
             desiredAnimationSpeed = 1f;
         }
-        else if (walking)
+        else if (moveInput.magnitude != 0f)
         {
             desiredAnimationSpeed = 0.5f;
         }
