@@ -564,8 +564,10 @@ GameObject:
   m_Component:
   - component: {fileID: 8815569425475547774}
   - component: {fileID: 1783135158864127520}
-  - component: {fileID: 8319331776875636598}
   - component: {fileID: 5926500703810798801}
+  - component: {fileID: 6942959392635350103}
+  - component: {fileID: 3833700895584976880}
+  - component: {fileID: 7699332297048472207}
   m_Layer: 6
   m_Name: Player
   m_TagString: Untagged
@@ -605,14 +607,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   ShowTopMostFoldoutHeaderGroup: 1
   _player: {fileID: 2947696790774383646}
-  controller: {fileID: 8319331776875636598}
-  speed: 12
-  speedChangeTime: 10
-  runSpeedLossPercent: 0.8
+  rb: {fileID: 6942959392635350103}
+  capsule: {fileID: 7699332297048472207}
+  mouseLook: {fileID: 2717954129342030276}
+  playerGFX: {fileID: 2249268156212771176}
+  groundCheck: {fileID: 4983955678583759157}
+  anim: {fileID: 0}
   walkSpeed: 4
   crouchWalkSpeed: 2
   runSpeed: 8
   runSpeedAir: 8
+  groundAcceleration: 45
+  airAcceleration: 15
+  groundDeceleration: 55
+  maximumVelocityChange: 8
+  runSpeedLossPercent: 0.8
   maxStamina: 1
   staminaCost: 0.33
   staminaGain: 0.4
@@ -621,58 +630,34 @@ MonoBehaviour:
   gravity: -20
   fallingGravityWeight: 1.5
   jumpHeight: 2
-  groundCheck: {fileID: 4983955678583759157}
+  groundedCoyoteTime: 0.2
+  jumpBufferTime: 0.1
   groundDistance: 0.4
   groundMask:
     serializedVersion: 2
     m_Bits: 8
+  isGrounded: 0
+  maximumGroundAngle: 60
   crouchHeight: 1
   standingHeight: 2
-  currentChargeState: 0
-  groundedCoyoteTime: 0.2
   crouchSpeed: 1
+  playerGFXCrouchMultiplier: 0.25
+  ceilingMask:
+    serializedVersion: 2
+    m_Bits: 0
   walking: 0
   running: 0
   aiming: 0
-  isGrounded: 0
-  hasKnockback: 0
-  isStunned: 0
   crouching: 0
   isMoving: 0
-  mouseLook: {fileID: 2717954129342030276}
-  playerGFX: {fileID: 2249268156212771176}
-  playerGFXCrouchMultiplier: 0.25
-  anim: {fileID: 0}
+  hasKnockback: 0
+  isStunned: 0
+  currentChargeState: 0
   moveXVar: MoveX
   moveZVar: MoveZ
   jumpTrigger: Jump
   animChangeSpeed: 5
   _knockbacks: []
---- !u!143 &8319331776875636598
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6418211705436806482}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Height: 2
-  m_Radius: 0.5
-  m_SlopeLimit: 65
-  m_StepOffset: 0.3
-  m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 1, z: 0}
 --- !u!114 &5926500703810798801
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -719,3 +704,70 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!54 &6942959392635350103
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6418211705436806482}
+  serializedVersion: 5
+  m_Mass: 25
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 1
+  m_Constraints: 80
+  m_CollisionDetection: 0
+--- !u!114 &3833700895584976880
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6418211705436806482}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkRigidbody
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkRigidbodyBaseExpanded: 0
+  UseRigidBodyForMotion: 0
+  AutoUpdateKinematicState: 1
+  AutoSetKinematicOnDespawn: 1
+--- !u!136 &7699332297048472207
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6418211705436806482}
+  m_Material: {fileID: 13400000, guid: a18db22ddc486a24fae7100bf0c2210a, type: 2}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 2.0206592
+  m_Direction: 1
+  m_Center: {x: 0, y: 1.0045685, z: 0}
