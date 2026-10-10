@@ -24,11 +24,14 @@ Air control has a lower acceleration limit and preserves momentum without input.
 Grounded state is actual support; coyote time only grants jump eligibility.
 
 `DesktopRagdoll` builds a placeholder torso, head, two arms, and two legs with
-Rigidbody/ConfigurableJoint components. The total is seven simulated bodies per
-local player including the motor. The body parts have physical colliders and
-driven angular poses; footsteps and lean come from measured velocity. They react
-to objects and knockback, and their pose drives soften during stun. This is an
-assisted active ragdoll with a stable capsule, not a fully collapsing humanoid.
+Rigidbody/ConfigurableJoint components. Each client simulates six cosmetic bodies
+for every visible player, attached to a local kinematic anchor. The detached
+simulation hierarchy avoids inheriting network root rotation a second time.
+Only the main capsule collides with gameplay objects; cosmetic colliders are
+disabled and joints cannot feed forces back into the capsule. Driven angular
+poses, footsteps, and lean follow root motion, with softer drives during stun.
+Remote gait uses observed root displacement rather than remote Rigidbody velocity.
+This is an assisted active ragdoll with a stable capsule, not a fully collapsing humanoid.
 Replacing its primitive meshes with a humanoid rig is a separate art/rigging step.
 
 All self collisions are ignored per instance. The capsule material has no bounce
@@ -57,14 +60,37 @@ physical slopes handle ordinary uneven surfaces.
 
 ## Networking boundary
 
-No new RPCs, NetworkVariables, limb NetworkTransforms, or replication code were
-added. Existing root Netcode components remain on the prefab. Player.cs retains
+Existing root Netcode components remain on the prefab. Player.cs retains
 its original Start/IsOwner initialization. PlayerMovement remains a NetworkBehaviour
 and movement/camera control uses the existing IsOwner checks. Only the owner applies
-forces. Remote decorative body parts are kinematic with colliders disabled.
+forces to the gameplay capsule. Both owned and remote decorative body parts are
+dynamic, with colliders disabled. Their local kinematic anchor follows the root
+position received through the existing NetworkTransform. Dedicated servers skip
+cosmetic simulation. No limb transforms are transmitted.
+
+PlayerMovement owns one owner-written NetworkVariable for a seven-byte pose payload
+(plus Netcode overhead): continuous float yaw, byte crouch amount, byte flags for
+grounded/stunned, and signed byte head pitch. Updates are limited to 20/sec and
+unchanged values are not transmitted. Yaw is quantized to half a degree, crouch
+to 1/255, and pitch to approximately 0.7 degrees. Full current state is available
+to late joiners. Remote capsule height/center and local joint targets follow this
+state, including crouch blocked by a ceiling rather than just crouch input.
+
+DesktopPlayer's NetworkTransform sends position only. The compact pose carries
+physical capsule yaw as a continuous scalar; remote interpolation preserves turn
+direction across 360-degree boundaries or snapshots spanning over half a turn.
+This avoids combining NetworkTransform rotation smoothing with pose smoothing.
+Remote root yaw and head pitch use a short smoothing response; local mouse aim
+and force-based owner rotation retain their existing behavior.
+
+Keep DesktopPlayer's serialized NetworkObject prefab hash in sync with Unity's
+validated asset identity. Its old serialized hash differed from the main editor's
+recalculated value, causing NetworkConfig mismatch with Multiplayer Play Mode
+Player 2. Saving the validated prefab and reloading Player 2 resolves that stale
+asset discrepancy; ForceSamePrefabs remains enabled.
 
 For later additions to the existing network implementation, keep one authoritative root body and send its
-position, yaw, and velocity plus compact crouch/movement/action state. Reconstruct
+position and velocity plus compact movement/action state. Reconstruct
 gait and pose locally from these values instead of synchronizing six limbs. Use
 interpolated root snapshots at a separately tuned send rate; transmit discrete
 jump, stun, and hit events when they occur. Root collision/hit outcomes should
@@ -74,16 +100,21 @@ alone is not sufficient for identical simulations across clients.
 Only consider temporary extra pose snapshots for gameplay-significant collapse or
 grabbing. Quantization, change thresholds, interest management, and a lower send
 rate can be evaluated when extending networking. The existing transport and
-root synchronization settings have not been retuned here.
+position synchronization settings have not been retuned here.
 
 ## Verification
 
 The optional editor helpers were removed. Earlier physics checks covered acceleration,
 stopping, reversal, jumps, air momentum, crouch clearance, knockback recovery, and
-joint stability. Two isolated Unity editors passed 38 host/client integration checks
+joint stability. Two isolated Unity editors passed 70 host/client integration checks
 using the existing local spawn/RPC flow: owner input, braking, crouching, jumping,
-remote camera cleanup, remote kinematic bodies, and root movement replication in
-both directions. No runtime errors were observed in that integration run.
+remote camera cleanup, remote kinematic capsules with locally simulated limbs,
+and root movement replication in both directions. Actual 180-degree physics turns
+kept meshes aligned and limbs close to both capsules. Limb impulses did not move
+the gameplay capsule. Remote crouching/standing, head pitch, grounded/stun flags,
+and recovery passed on both peers. A simulated 0.7-second pose delivery gap
+produced 331 degrees between snapshots without reversing remote rotation.
+No runtime errors were observed in that integration run.
 Numerical checks are useful limits; the final feel still needs a hands-on playthrough.
 
 ## Unity MCP
