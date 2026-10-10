@@ -304,7 +304,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 45688551
+  GlobalObjectIdHash: 2159492774
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -344,6 +344,52 @@ MonoBehaviour:
   renderers_ShadowsOnly_Local:
   - {fileID: 5826942142446078338}
   - {fileID: 8459508765054506919}
+--- !u!1 &4201740472329841143
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 227170190115490476}
+  - component: {fileID: 957672852813984538}
+  m_Layer: 6
+  m_Name: CamerShaker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &227170190115490476
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4201740472329841143}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7492705554189960120}
+  m_Father: {fileID: 8815569425475547774}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &957672852813984538
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4201740472329841143}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c07912fc7e08c440893fd16bbd9b443, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &4445616236146920872
 GameObject:
   m_ObjectHideFlags: 0
@@ -523,13 +569,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5989868466021412262}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.75, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.7499999, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6672161765042318036}
-  m_Father: {fileID: 8815569425475547774}
+  m_Father: {fileID: 227170190115490476}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2717954129342030276
 MonoBehaviour:
@@ -591,7 +637,7 @@ Transform:
   m_Children:
   - {fileID: 2249268156212771176}
   - {fileID: 4983955678583759157}
-  - {fileID: 7492705554189960120}
+  - {fileID: 227170190115490476}
   m_Father: {fileID: 4060541841604489701}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1783135158864127520
@@ -619,10 +665,10 @@ MonoBehaviour:
   runSpeed: 7.2
   runSpeedAir: 7.2
   groundAcceleration: 48
-  airAcceleration: 12
+  airAcceleration: 48
   groundDeceleration: 65
   directionChangeAcceleration: 75
-  velocityGain: 18
+  velocityGain: 40
   velocityDamping: 0.08
   velocityIntegralGain: 0
   facingSpring: 110
@@ -636,7 +682,7 @@ MonoBehaviour:
   gravity: -22
   fallingGravityWeight: 1.65
   releasedJumpGravityWeight: 2.2
-  jumpHeight: 0.85
+  jumpHeight: 1.7
   groundedCoyoteTime: 0.12
   jumpBufferTime: 0.14
   groundDistance: 0.12
@@ -788,7 +834,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52a7c904702a4f63bbef6b95eec799a2, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DesktopRagdoll
   bodyMaterial: {fileID: 2100000, guid: 22ab4467faba4a142a5a906f7917178e, type: 2}
   headMaterial: {fileID: 2100000, guid: 82249eae7d8a54c40b37f7fc72196801, type: 2}
