@@ -26,7 +26,24 @@ public class PlayerMovement : NetworkBehaviour
     public float airAcceleration = 12f;
     public float groundDeceleration = 65f;
     public float directionChangeAcceleration = 75f;
-    public float dashForce = 25f;
+
+    [Header("Dash")]
+    public float dashSpeed = 35f;
+    public float dashDuration = 0.10f;
+    public float dashBrake = 180f;
+
+    private float dashTimer;
+    private Vector3 dashDirection;
+
+    [Header("Dash FOV")]
+    public float dashFOVBoost = 25f;
+    public float dashFOVInSpeed = 35f;
+    public float dashFOVOutSpeed = 10f;
+
+    private float currentDashFOV;
+
+    [Space]
+
     [Tooltip("Velocity servo response in 1/seconds. Higher is snappier.")]
     public float velocityGain = 18f;
     [Tooltip("Damping on measured acceleration, not input changes (no derivative kick).")]
@@ -231,8 +248,28 @@ public class PlayerMovement : NetworkBehaviour
         rb.AddForce(Vector3.up * gravity * weight, ForceMode.Acceleration);
         if (isGrounded && !jumpConsumed)
             rb.AddForce(-groundNormal * groundStickAcceleration, ForceMode.Acceleration);
+
         if (mouseLook != null)
-            mouseLook.SetZoom(mouseLook.defaultFOV + Mathf.Clamp01(RelativeVelocity.magnitude / runSpeed) * 6f);
+        {
+            float targetDashFOV = dashTimer > 0f ? dashFOVBoost : 0f;
+
+            float speed = dashTimer > 0f
+                ? dashFOVInSpeed
+                : dashFOVOutSpeed;
+
+            currentDashFOV = Mathf.MoveTowards(
+                currentDashFOV,
+                targetDashFOV,
+                speed * Time.fixedDeltaTime
+            );
+
+            float movementFOV = Mathf.Clamp01(RelativeVelocity.magnitude / runSpeed) * 6f;
+
+            mouseLook.SetZoom(
+                mouseLook.defaultFOV + movementFOV + currentDashFOV
+            );
+        }
+
         if (IsSpawned)
         {
             float yaw = rb.rotation.eulerAngles.y;
@@ -309,11 +346,60 @@ public class PlayerMovement : NetworkBehaviour
 
     public void Dash()
     {
-        rb.AddForce(moveInput.normalized * dashForce, ForceMode.Impulse);
+        if (!HasControl || locked || isStunned || dashTimer > 0f)
+            return;
+
+        dashDirection = Quaternion.Euler(0f, FacingYaw, 0f)
+            * new Vector3(moveInput.x, 0f, moveInput.y);
+
+        if (dashDirection.sqrMagnitude < 0.001f)
+            return;
+
+        dashDirection.Normalize();
+
+        Vector3 velocity = rb.linearVelocity;
+
+        // Instantly launch at full dash speed.
+        Vector3 targetVelocity = dashDirection * dashSpeed;
+
+        Vector3 velocityChange = targetVelocity
+            - new Vector3(velocity.x, 0f, velocity.z);
+
+        rb.AddForce(velocityChange, ForceMode.VelocityChange);
+
+        if (ragdoll != null)
+            ragdoll.AddVelocityChange(velocityChange);
+
+        dashTimer = dashDuration;
+        servo.Reset();
     }
 
     private void ApplyMovement(float dt)
     {
+        if (dashTimer > 0f)
+        {
+            dashTimer -= dt;
+
+            if (dashTimer <= 0f)
+            {
+                Vector3 horizontalVelocity =
+                    Vector3.ProjectOnPlane(rb.linearVelocity, Vector3.up);
+
+                Vector3 targetVelocity = dashDirection * walkSpeed;
+
+                Vector3 change = targetVelocity - horizontalVelocity;
+
+                rb.AddForce(change, ForceMode.VelocityChange);
+
+                if (ragdoll != null)
+                    ragdoll.AddVelocityChange(change);
+
+                servo.Reset();
+            }
+
+            return;
+        }
+
         Vector3 direction = Quaternion.Euler(0f, FacingYaw, 0f) * new Vector3(moveInput.x, 0f, moveInput.y);
         Vector3 planeNormal = isGrounded ? groundNormal : Vector3.up;
         if (isGrounded) direction = Vector3.ProjectOnPlane(direction, planeNormal).normalized * moveInput.magnitude;
