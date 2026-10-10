@@ -52,7 +52,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Position
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Vector3
       m_Id: 38923838-50f1-4ae5-92b8-fa80d31f9d57
       m_Processors: 
@@ -72,7 +72,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Rotation
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Quaternion
       m_Id: 654e3aa0-52ce-4721-978f-6a498f5e8474
       m_Processors: 
@@ -92,7 +92,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Tracking State
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Integer
       m_Id: 94779708-a57d-48ab-b0c9-ad5e5c2e62fe
       m_Processors: 
@@ -458,8 +458,8 @@ MonoBehaviour:
   m_Camera: {fileID: 6363777199391361470}
   m_OriginBaseGameObject: {fileID: 4054056925215020604}
   m_CameraFloorOffsetObject: {fileID: 7310283448150209108}
-  m_RequestedTrackingOriginMode: 0
-  m_CameraYOffset: 1.1176
+  m_RequestedTrackingOriginMode: 2
+  m_CameraYOffset: 1.65
 --- !u!1 &4334468127637315160
 GameObject:
   m_ObjectHideFlags: 0
@@ -512,7 +512,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Position
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Vector3
       m_Id: a3511565-6e06-421b-a35f-8892c37f7f4f
       m_Processors: 
@@ -532,7 +532,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Rotation
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Quaternion
       m_Id: 61257b02-c210-4b14-aa0a-27a76432f7e1
       m_Processors: 
@@ -552,7 +552,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Tracking State
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Integer
       m_Id: a5312689-c20d-493b-8dfe-c43362913c55
       m_Processors: 
@@ -601,7 +601,7 @@ GameObject:
   - component: {fileID: 6703389536375514357}
   m_Layer: 6
   m_Name: Camera
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -743,7 +743,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Position
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Vector3
       m_Id: a35dd004-191b-4feb-8808-501169c51f69
       m_Processors: 
@@ -771,7 +771,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Rotation
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Quaternion
       m_Id: 4b103336-6b63-4979-a3be-1b4871248a92
       m_Processors: 
@@ -799,7 +799,7 @@ MonoBehaviour:
     m_UseReference: 0
     m_Action:
       m_Name: Tracking State
-      m_Type: 0
+      m_Type: 2
       m_ExpectedControlType: Integer
       m_Id: 41ed3581-980b-4982-a0e9-635c5e44e8c0
       m_Processors: 
@@ -858,7 +858,7 @@ Transform:
   m_GameObject: {fileID: 7310283448150209108}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.1176, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
