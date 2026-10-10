@@ -10,6 +10,8 @@ public class Player : NetworkBehaviour
     public PlayerInput _input;
     public PlayerMovement _movement;
 
+    public PlayerRagdollManager _ragdollManager;
+
     [Space]
 
     public Component[] componentsToDestroy_Other;
@@ -68,5 +70,16 @@ public class Player : NetworkBehaviour
     {
         if (IsOwner)
             CameraShaker.Instance.ShakeOnce(magnitude, roughness, fadeInTime, fadeOutTime);
+    }
+
+    private void Update()
+    {
+        if(IsOwner)
+        {
+            if(Keyboard.current.qKey.wasPressedThisFrame)
+            {
+                _ragdollManager.SetRagdoll(!_ragdollManager.isRagdoll);
+            }
+        }
     }
 }

@@ -195,7 +195,15 @@ public class PlayerMovement : NetworkBehaviour
 
     private void Update()
     {
-        if (!HasControl || _player._input == null || !_player._input.enabled) return;
+        //Debug.Log("Ragdoll State: " + Player.me._ragdollManager.isRagdoll);
+        anim.SetBool("Enabled", !Player.me._ragdollManager.isRagdoll);
+
+        if (!HasControl || _player._input == null || !_player._input.enabled || Player.me._ragdollManager.isRagdoll) 
+        {
+            moveInput = Vector2.zero;
+            return;
+        } 
+        
         if (moveAction == null)
         {
             var actions = _player._input.actions;
