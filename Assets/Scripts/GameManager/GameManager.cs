@@ -7,6 +7,7 @@ public class GameManager : MonoBehaviour
 
     [Header("UI Reference")]
     public TextMeshProUGUI timerText;
+    public TextMeshProUGUI hidersCountText;
 
     [Header("Timer Settings")]
     public float timeRemaining = 60.0f;
@@ -33,6 +34,8 @@ public class GameManager : MonoBehaviour
 
         // Starts the timer automatically on scene load
         timerIsRunning = true;
+        UpdateHidersCountUI();
+
     }
 
     private void Update()
@@ -97,5 +100,10 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Hiders win!");
         // Implement hiders win UI or logic here
+    }
+
+    void UpdateHidersCountUI()
+    {
+        hidersCountText.text = "Hiders Remaining: " + players.Length;
     }
 }
