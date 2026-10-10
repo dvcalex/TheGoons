@@ -6,13 +6,8 @@ namespace LibreFracture
     {
         [Header("Parameters")]
         public float totalMass;
-        public float jointBreakForce;
 
         [Header("Behaviour")]
-        [Tooltip("If true, chunks bordering other colliders nearby gets anchored to those ones.")]
-        [SerializeField] private bool anchored;
-        [Tooltip("If true, each chunk's rigidbody has its constraints set to frozen when still connected to the graph.")]
-        [SerializeField] private bool freezeConnectedChunks;
         [Tooltip("If true, object at start disables all its chunks and enables its root mesh renderer and collider. Chunks will enable on first collision.")]
         [SerializeField] private bool startAsleep;
 
@@ -64,17 +59,14 @@ namespace LibreFracture
 
             foreach (ChunkNode node in _nodes)
             {
-                // Setup Node
-                node.freezeWhenConnected = freezeConnectedChunks;
-                node.ConnectTouchingChunks(jointBreakForce);
-                if (anchored)
-                    node.TryAnchor();
+                // All chunks start kinematic; they turn dynamic when hit
+                node.MakeKinematic();
 
                 // Accumulate to distribute mass based on Chunk approximated dimension
                 boundingVolumesSum += node.BoundingVolume;
             }
 
-            // Distrubute mass
+            // Distribute mass
             // TODO: There may be cases in which computed mass for a Rigidbody is very small, resulting in weird chunk behaviour. Try normalize the distribution
             // allowing a min mass threshold value.
             foreach (ChunkNode node in _nodes)

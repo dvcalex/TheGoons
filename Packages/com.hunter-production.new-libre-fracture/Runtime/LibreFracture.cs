@@ -120,7 +120,7 @@ namespace LibreFracture
             gameObject.transform.localScale = originalScale;
 
             var fracture = gameObject.AddComponent<ChunkGraphManager>();
-            fracture.jointBreakForce = parameters.jointBreakForce;
+            //fracture.jointBreakForce = parameters.jointBreakForce;
             fracture.totalMass = parameters.totalObjectMass;
         }
 
@@ -174,7 +174,7 @@ namespace LibreFracture
                 fracturedObject.AddComponent<MeshCollider>();
 
             var fracture = fracturedObject.GetOrAddComponent<ChunkGraphManager>();
-            fracture.jointBreakForce = parameters.jointBreakForce;
+            //fracture.jointBreakForce = parameters.jointBreakForce;
             fracture.totalMass = parameters.totalObjectMass;
 
             fracturedObject.name = fracturedObject.name.Replace("Preview", "");
