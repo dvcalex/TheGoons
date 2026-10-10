@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
-// Input requests velocity; only forces move the player. No per-limb network state.
+// Input requests velocity; only forces move the owner. Replicate root pose, not limbs.
 [RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class PlayerMovement : NetworkBehaviour
 {
@@ -80,6 +80,68 @@ public class PlayerMovement : NetworkBehaviour
     public Vector3 GroundVelocity { get; private set; }
     public Vector3 RelativeVelocity => rb.linearVelocity - GroundVelocity;
     public bool HasControl => IsOwner && _player != null;
+    public float HeadPitch => HasControl && mouseLook != null ? mouseLook.Pitch : remotePitch;
+
+    // Seven payload bytes. Continuous yaw preserves the direction of fast turns
+    // across wraparound and skipped samples; no per-limb transforms are sent.
+    public struct PoseState : INetworkSerializable, System.IEquatable<PoseState>
+    {
+        public float Yaw;
+        public byte Crouch, Flags;
+        public sbyte Pitch;
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref Yaw);
+            serializer.SerializeValue(ref Crouch);
+            serializer.SerializeValue(ref Flags);
+            serializer.SerializeValue(ref Pitch);
+        }
+        public bool Equals(PoseState other) => Yaw == other.Yaw && Crouch == other.Crouch && Flags == other.Flags && Pitch == other.Pitch;
+    }
+    private readonly NetworkVariable<PoseState> networkPose = new NetworkVariable<PoseState>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private float continuousYaw, sampledYaw, remoteYaw, remotePitch, poseSendTimer;
+
+    public override void OnNetworkSpawn()
+    {
+        sampledYaw = rb.rotation.eulerAngles.y;
+        continuousYaw = sampledYaw;
+        if (IsOwner) PublishPose();
+        else
+        {
+            remoteYaw = networkPose.Value.Yaw;
+            ApplyRemotePose(1f);
+        }
+    }
+
+    private void PublishPose()
+    {
+        networkPose.Value = new PoseState
+        {
+            Yaw = Mathf.Round(continuousYaw * 2f) * 0.5f,
+            Crouch = (byte)Mathf.RoundToInt(CrouchAmount * 255f),
+            Flags = (byte)((isGrounded ? 1 : 0) | (isStunned ? 2 : 0)),
+            Pitch = (sbyte)Mathf.RoundToInt(Mathf.Clamp(HeadPitch, -90f, 90f) * 127f / 90f)
+        };
+    }
+
+    private void ApplyRemotePose(float blend)
+    {
+        var pose = networkPose.Value;
+        // Interpolate the unwrapped scalar, never choose a quaternion's shortest
+        // path between snapshots that may span more than half a turn.
+        // Bound each physics step so even a long delivery gap cannot make the
+        // cosmetic kinematic anchor take the opposite quaternion path.
+        remoteYaw += Mathf.Clamp((pose.Yaw - remoteYaw) * blend, -90f, 90f);
+        remotePitch = Mathf.Lerp(remotePitch, pose.Pitch * 90f / 127f, blend);
+        transform.rotation = Quaternion.Euler(0f, remoteYaw, 0f);
+        capsule.height = Mathf.Lerp(capsule.height,
+            Mathf.Lerp(standingHeight, crouchHeight, pose.Crouch / 255f), blend);
+        capsule.center = standingCenter - Vector3.up * ((standingHeight - capsule.height) * 0.5f);
+        crouching = pose.Crouch > 127;
+        isGrounded = (pose.Flags & 1) != 0;
+        isStunned = (pose.Flags & 2) != 0;
+    }
 
     private Vector2 moveInput;
     private bool crouchInput, runInput, jumpHeld, locked, jumpConsumed, rechargingStamina;
@@ -138,6 +200,7 @@ public class PlayerMovement : NetworkBehaviour
 
     private void FixedUpdate()
     {
+        if (IsSpawned && !IsOwner) ApplyRemotePose(1f - Mathf.Exp(-30f * Time.fixedDeltaTime));
         if (!HasControl || rb.isKinematic) return;
         float dt = Time.fixedDeltaTime;
         CheckGrounded(dt);
@@ -165,6 +228,18 @@ public class PlayerMovement : NetworkBehaviour
             rb.AddForce(-groundNormal * groundStickAcceleration, ForceMode.Acceleration);
         if (mouseLook != null)
             mouseLook.SetZoom(mouseLook.defaultFOV + Mathf.Clamp01(RelativeVelocity.magnitude / runSpeed) * 6f, 35f);
+        if (IsSpawned)
+        {
+            float yaw = rb.rotation.eulerAngles.y;
+            continuousYaw += Mathf.DeltaAngle(sampledYaw, yaw);
+            sampledYaw = yaw;
+            poseSendTimer -= dt;
+            if (poseSendTimer <= 0f)
+            {
+                PublishPose();
+                poseSendTimer = 0.05f; // At most 20 updates/sec; unchanged values are not sent.
+            }
+        }
     }
 
     private bool IsSelf(Collider other) => other.transform.IsChildOf(transform);

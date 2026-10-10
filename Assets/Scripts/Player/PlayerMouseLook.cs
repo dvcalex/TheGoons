@@ -14,6 +14,7 @@ public class PlayerMouseLook : NetworkBehaviour
     public Transform playerBody;
     public PlayerMovement movement;
     float xRotation = 0f;
+    public float Pitch => xRotation;
     float yaw;
     Vector3 standingPosition;
 
