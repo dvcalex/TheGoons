@@ -1,9 +1,6 @@
-﻿using NUnit.Framework;
-using System;
-using System.Globalization;
+
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Diagnostics;
 using UnityEngine.InputSystem;
 
 public class PlayerMouseLook : NetworkBehaviour
@@ -17,6 +14,8 @@ public class PlayerMouseLook : NetworkBehaviour
     public Transform playerBody;
     public PlayerMovement movement;
     float xRotation = 0f;
+    float yaw;
+    Vector3 standingPosition;
 
     public bool canLook;
     public Transform followPoint;
@@ -38,7 +37,7 @@ public class PlayerMouseLook : NetworkBehaviour
 
     void Start()
     {
-        if (_mine == null && IsOwner)
+        if (_mine == null && _player.HasLocalControl)
             _mine = this;
         else
             return;
@@ -46,6 +45,8 @@ public class PlayerMouseLook : NetworkBehaviour
         currentZoom = cam.fieldOfView;
         defaultFOV = cam.fieldOfView;
         simulatedFOV = cam.fieldOfView;
+        yaw = movement.FacingYaw;
+        standingPosition = transform.localPosition;
         Cursor.lockState = CursorLockMode.Locked;
 
         //PlayerSettings._instance.onSettingsUpdated += OnSettingsUpdated;
@@ -53,6 +54,7 @@ public class PlayerMouseLook : NetworkBehaviour
 
     private void OnDisable()
     {
+        if (_mine == this) _mine = null;
         //if(PlayerSettings._instance != null)
         //    PlayerSettings._instance.onSettingsUpdated -= OnSettingsUpdated;
     }
@@ -67,7 +69,7 @@ public class PlayerMouseLook : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!IsOwner)
+        if (_player == null || !_player.HasLocalControl)
             return;
 
         if (disabled)
@@ -122,7 +124,19 @@ public class PlayerMouseLook : NetworkBehaviour
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
         transform.localRotation = Quaternion.Euler(xRotation, transform.localEulerAngles.y, transform.localEulerAngles.z);
-        playerBody.Rotate(Vector3.up * mouseX);
+        yaw = Mathf.Repeat(yaw + mouseX, 360f);
+        movement.SetFacingYaw(yaw);
+    }
+
+    private void LateUpdate()
+    {
+        if (_player == null || !_player.HasLocalControl || followPoint != null) return;
+        // Mouse aim is immediate; physics yaw catches up through torque in FixedUpdate.
+        // Keep the camera stable instead of attaching it to a wobbling head.
+        transform.rotation = Quaternion.Euler(xRotation, yaw, 0f);
+        float drop = movement.standingHeight - movement.capsule.height;
+        Vector3 target = standingPosition - Vector3.up * drop;
+        transform.localPosition = Vector3.Lerp(transform.localPosition, target, 1f - Mathf.Exp(-18f * Time.deltaTime));
     }
 
     public void DisableControl()
