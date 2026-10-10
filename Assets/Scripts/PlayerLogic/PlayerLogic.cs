@@ -3,151 +3,138 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class PlayerLogic : MonoBehaviour
+public class AbilityButtonManager : MonoBehaviour
 {
-    [Header("Ability Settings")]
-    [SerializeField] private float totalCooldownTime = 5f;
-    private float currentCooldown = 0f;
-    private bool isCoolingDown = false;
+    [System.Serializable]
+    public class AbilityData
+    {
+        public string abilityName = "Ability";
+        public float totalCooldownTime = 5f;
 
-    [Header("UI References")]
-    [SerializeField] private RawImage iconImage;              // The main ability icon graphic
-    [SerializeField] private Image cooldownOverlay;       // The radial filled gray image
-    [SerializeField] private TextMeshProUGUI cooldownText; // TMP text for numbers
-    [SerializeField] private Button abilityButton;         // The main button component
+        [Header("UI References")]
+        public RawImage iconImage;             // Raw Image for ability icon
+        public Image cooldownOverlay;        // UI Image with Radial 360 Fill
+        public TextMeshProUGUI cooldownText;  // TMP timer text
+        public Button abilityButton;          // UI Button component
 
-    [Header("Player Reference")]
-    [SerializeField] private GameObject playerObject;      // Reference to your player to trigger invisibility
+        [HideInInspector] public float currentCooldown = 0f;
+        [HideInInspector] public bool isCoolingDown = false;
+    }
+
+    [Header("Abilities")]
+    [SerializeField] private AbilityData invisAbility;
+    [SerializeField] private AbilityData dashAbility;
 
     [Header("Visual Tuning")]
     [SerializeField] private Color readyColor = Color.white;
-    [SerializeField] private Color cooldownColor = new Color(0.4f, 0.4f, 0.4f, 1f); // Darkened icon tint
+    [SerializeField] private Color cooldownColor = new Color(0.4f, 0.4f, 0.4f, 1f);
 
     private void Start()
     {
-        // Initialize UI state
-        if (cooldownOverlay != null) cooldownOverlay.fillAmount = 0f;
-        if (cooldownText != null) cooldownText.gameObject.SetActive(false);
-        if (iconImage != null) iconImage.color = readyColor;
+        SetupAbility(invisAbility);
+        SetupAbility(dashAbility);
+    }
 
-        if (abilityButton != null)
+    private void SetupAbility(AbilityData ability)
+    {
+        if (ability.cooldownOverlay != null) ability.cooldownOverlay.fillAmount = 0f;
+        if (ability.cooldownText != null) ability.cooldownText.gameObject.SetActive(false);
+        if (ability.iconImage != null) ability.iconImage.color = readyColor;
+
+        if (ability.abilityButton != null)
         {
-            abilityButton.onClick.AddListener(UseAbility);
+            // Automatically hook up the button click event
+            AbilityData targetAbility = ability;
+            ability.abilityButton.onClick.AddListener(() => OnAbilityClicked(targetAbility));
         }
-        UseAbility();
     }
 
     private void Update()
     {
-        if (isCoolingDown)
-        {
-            currentCooldown -= Time.deltaTime;
-
-            // Update radial fill (going from 1 down to 0)
-            if (cooldownOverlay != null)
-            {
-                cooldownOverlay.fillAmount = currentCooldown / totalCooldownTime;
-            }
-
-            // Update numerical text
-            if (cooldownText != null)
-            {
-                if (currentCooldown > 0f)
-                {
-                    cooldownText.text = currentCooldown.ToString("F1"); // Displays 1 decimal place
-                }
-                else
-                {
-                    cooldownText.text = "";
-                    cooldownText.gameObject.SetActive(false);
-                }
-            }
-
-            // Check if cooldown has finished
-            if (currentCooldown <= 0f)
-            {
-                isCoolingDown = false;
-                if (abilityButton != null) abilityButton.interactable = true;
-                if (iconImage != null) iconImage.color = readyColor;
-
-                // Trigger juice feedback when ready
-                StartCoroutine(PulseOnReady());
-            }
-        }
+        UpdateCooldown(invisAbility);
+        UpdateCooldown(dashAbility);
     }
 
-    public void UseAbility()
+    private void OnAbilityClicked(AbilityData ability)
     {
-        if (isCoolingDown) return;
-
-        // Trigger ability logic (e.g., Go Invisible)
-        ActivateInvisibility();
+        if (ability.isCoolingDown) return;
 
         // Start Cooldown
-        currentCooldown = totalCooldownTime;
-        isCoolingDown = true;
-        if (abilityButton != null) abilityButton.interactable = false;
+        ability.currentCooldown = ability.totalCooldownTime;
+        ability.isCoolingDown = true;
 
-        // Darken icon tint during cooldown
-        if (iconImage != null) iconImage.color = cooldownColor;
+        if (ability.abilityButton != null) ability.abilityButton.interactable = false;
+        if (ability.iconImage != null) ability.iconImage.color = cooldownColor;
+        if (ability.cooldownText != null) ability.cooldownText.gameObject.SetActive(true);
+    }
 
-        if (cooldownText != null)
+    private void UpdateCooldown(AbilityData ability)
+    {
+        if (!ability.isCoolingDown) return;
+
+        ability.currentCooldown -= Time.deltaTime;
+
+        // Update radial fill overlay
+        if (ability.cooldownOverlay != null)
         {
-            cooldownText.gameObject.SetActive(true);
+            ability.cooldownOverlay.fillAmount = ability.currentCooldown / ability.totalCooldownTime;
+        }
+
+        // Update TMP timer text
+        if (ability.cooldownText != null)
+        {
+            if (ability.currentCooldown > 0f)
+            {
+                ability.cooldownText.text = ability.currentCooldown.ToString("F1");
+            }
+            else
+            {
+                ability.cooldownText.text = "";
+                ability.cooldownText.gameObject.SetActive(false);
+            }
+        }
+
+        // Check if cooldown finished
+        if (ability.currentCooldown <= 0f)
+        {
+            ability.isCoolingDown = false;
+
+            if (ability.abilityButton != null)
+            {
+                ability.abilityButton.interactable = true;
+                StartCoroutine(PulseOnReady(ability.abilityButton.transform));
+            }
+
+            if (ability.iconImage != null)
+            {
+                ability.iconImage.color = readyColor;
+            }
         }
     }
 
-    private IEnumerator PulseOnReady()
+    private IEnumerator PulseOnReady(Transform targetTransform)
     {
-        Vector3 originalScale = transform.localScale;
-        Vector3 targetScale = originalScale * 1.15f; // Scale up 15%
+        Vector3 originalScale = targetTransform.localScale;
+        Vector3 targetScale = originalScale * 1.15f;
 
         float elapsed = 0f;
         float duration = 0.08f;
 
-        // Scale up quickly
         while (elapsed < duration)
         {
-            transform.localScale = Vector3.Lerp(originalScale, targetScale, elapsed / duration);
+            targetTransform.localScale = Vector3.Lerp(originalScale, targetScale, elapsed / duration);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        // Scale back down
         elapsed = 0f;
         while (elapsed < duration)
         {
-            transform.localScale = Vector3.Lerp(targetScale, originalScale, elapsed / duration);
+            targetTransform.localScale = Vector3.Lerp(targetScale, originalScale, elapsed / duration);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        transform.localScale = originalScale;
-    }
-
-    private void ActivateInvisibility()
-    {
-        if (playerObject != null)
-        {
-            Renderer playerRenderer = playerObject.GetComponent<Renderer>();
-            if (playerRenderer != null)
-            {
-                playerRenderer.enabled = false;
-            }
-
-            Invoke(nameof(DeactivateInvisibility), 3f);
-        }
-    }
-
-    private void DeactivateInvisibility()
-    {
-        if (playerObject != null)
-        {
-            Renderer playerRenderer = playerObject.GetComponent<Renderer>();
-            if (playerRenderer != null)
-            {
-                playerRenderer.enabled = true;
-            }
-        }
+        targetTransform.localScale = originalScale;
     }
 }
