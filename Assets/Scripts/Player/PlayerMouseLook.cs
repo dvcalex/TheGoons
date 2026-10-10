@@ -37,7 +37,7 @@ public class PlayerMouseLook : NetworkBehaviour
 
     void Start()
     {
-        if (_mine == null && _player.HasLocalControl)
+        if (_mine == null && IsOwner)
             _mine = this;
         else
             return;
@@ -69,7 +69,7 @@ public class PlayerMouseLook : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (_player == null || !_player.HasLocalControl)
+        if (!IsOwner)
             return;
 
         if (disabled)
@@ -130,7 +130,7 @@ public class PlayerMouseLook : NetworkBehaviour
 
     private void LateUpdate()
     {
-        if (_player == null || !_player.HasLocalControl || followPoint != null) return;
+        if (!IsOwner || followPoint != null) return;
         // Mouse aim is immediate; physics yaw catches up through torque in FixedUpdate.
         // Keep the camera stable instead of attaching it to a wobbling head.
         transform.rotation = Quaternion.Euler(xRotation, yaw, 0f);

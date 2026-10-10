@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 // Input requests velocity; only forces move the player. No per-limb network state.
 [RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : NetworkBehaviour
 {
     [Header("References")]
     public Player _player;
@@ -78,7 +79,7 @@ public class PlayerMovement : MonoBehaviour
     public float FacingYaw { get; private set; }
     public Vector3 GroundVelocity { get; private set; }
     public Vector3 RelativeVelocity => rb.linearVelocity - GroundVelocity;
-    public bool HasControl => _player != null && _player.HasLocalControl;
+    public bool HasControl => IsOwner && _player != null;
 
     private Vector2 moveInput;
     private bool crouchInput, runInput, jumpHeld, locked, jumpConsumed, rechargingStamina;
