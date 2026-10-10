@@ -15,8 +15,11 @@ public class GameManager : MonoBehaviour
     [Header("Game State")]
     public int HidersCount = 0;
 
+    public Player[] players;
+
     private void Awake()
     {
+        // Enforce Singleton pattern safely in Awake
         if (_instance != null && _instance != this)
         {
             Destroy(gameObject);
@@ -27,11 +30,6 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        if (HidersCount <= 0)
-        {
-            GameObject[] hiders = GameObject.FindGameObjectsWithTag("Hider");
-            HidersCount = hiders.Length;
-        }
 
         // Starts the timer automatically on scene load
         timerIsRunning = true;
@@ -76,6 +74,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Made public so hider scripts can call this when they die
     public void OnHiderDeath()
     {
         HidersCount--;
