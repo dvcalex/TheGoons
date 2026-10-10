@@ -668,6 +668,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2249268156212771176}
+  - component: {fileID: 7927207849770125521}
   m_Layer: 6
   m_Name: GFX
   m_TagString: Untagged
@@ -693,6 +694,18 @@ Transform:
   - {fileID: 5613739982055279745}
   m_Father: {fileID: 8815569425475547774}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7927207849770125521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5965896249609804403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5ef9eb30dd19a44289f5d2b110e1639, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
 --- !u!1 &5989868466021412262
 GameObject:
   m_ObjectHideFlags: 0
@@ -1032,6 +1045,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2249268156212771176}
     m_Modifications:
+    - target: {fileID: 1058721675113847552, guid: 2ff1d0c1ad4d19848bc74103c33e2d02, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4958583014315815743, guid: 2ff1d0c1ad4d19848bc74103c33e2d02, type: 3}
       propertyPath: m_LocalScale.x
       value: 2
@@ -1083,6 +1100,10 @@ PrefabInstance:
     - target: {fileID: 4958583014315815743, guid: 2ff1d0c1ad4d19848bc74103c33e2d02, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5254313095329081694, guid: 2ff1d0c1ad4d19848bc74103c33e2d02, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5603923005264307324, guid: 2ff1d0c1ad4d19848bc74103c33e2d02, type: 3}
       propertyPath: m_Name
@@ -1161,6 +1182,10 @@ MonoBehaviour:
       ParameterType: 1
     - name: Enabled
       NameHash: -1622900200
+      Synchronize: 1
+      ParameterType: 4
+    - name: Crouching
+      NameHash: -2032366093
       Synchronize: 1
       ParameterType: 4
   AnimatorParametersExpanded: 0
