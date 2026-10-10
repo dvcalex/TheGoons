@@ -133,6 +133,13 @@ public static class AutoFracture
         // Prefab the original mesh with fractured GO as child, name to Fractured_<original name>
         string outPath = AssetDatabase.GenerateUniqueAssetPath($"{k_OutputFolder}/{k_Prefix}{prefab.name}.prefab");
         original.name = k_Prefix + prefab.name;
+        Transform[] allChildren = original.GetComponentsInChildren<Transform>(true);
+
+        foreach (Transform child in allChildren)
+        {
+            child.gameObject.layer = LayerMask.NameToLayer("Nonbroken");
+        }
+
         PrefabUtility.SaveAsPrefabAsset(original, outPath);
 
         Object.DestroyImmediate(original);
