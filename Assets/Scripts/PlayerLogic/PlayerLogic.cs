@@ -5,13 +5,13 @@ using TMPro;
 
 public class PlayerLogic : MonoBehaviour
 {
-    public static PlayerLogic Instance; // Singleton reference for easy access
+    public static PlayerLogic Instance;
 
     [System.Serializable]
     public class AbilityData
     {
         public string abilityName = "Ability";
-        public float totalCooldownTime = 3f; // Set this to your actual cooldown length in the Inspector
+        public float totalCooldownTime = 3f;
 
         [Header("UI References")]
         public RawImage iconImage;
@@ -20,13 +20,16 @@ public class PlayerLogic : MonoBehaviour
 
         [HideInInspector] public float currentCooldown = 0f;
         [HideInInspector] public bool isCoolingDown = false;
+        [HideInInspector] public bool isActive = false;
     }
 
     [Header("Abilities")]
     [SerializeField] private AbilityData dashAbility;
+    [SerializeField] private AbilityData invisAbility;
 
     [Header("Visual Tuning")]
     [SerializeField] private Color readyColor = Color.white;
+    [SerializeField] private Color activeColor = new Color(0.2f, 0.2f, 0.2f, 1f); // Dark gray while invisible
     [SerializeField] private Color cooldownColor = new Color(0.4f, 0.4f, 0.4f, 1f);
 
     private void Awake()
@@ -37,17 +40,23 @@ public class PlayerLogic : MonoBehaviour
 
     private void Start()
     {
-        if (dashAbility.cooldownOverlay != null) dashAbility.cooldownOverlay.fillAmount = 0f;
-        if (dashAbility.cooldownText != null) dashAbility.cooldownText.gameObject.SetActive(false);
-        if (dashAbility.iconImage != null) dashAbility.iconImage.color = readyColor;
+        InitializeAbility(dashAbility);
+        InitializeAbility(invisAbility);
+    }
+
+    private void InitializeAbility(AbilityData ability)
+    {
+        if (ability.cooldownOverlay != null) ability.cooldownOverlay.fillAmount = 0f;
+        if (ability.cooldownText != null) ability.cooldownText.gameObject.SetActive(false);
+        if (ability.iconImage != null) ability.iconImage.color = readyColor;
     }
 
     private void Update()
     {
         UpdateCooldown(dashAbility);
+        UpdateCooldown(invisAbility);
     }
 
-    // Call this from your Player Controller when R is pressed and Dash succeeds
     public void TriggerDashCooldown()
     {
         if (dashAbility.isCoolingDown) return;
@@ -57,6 +66,28 @@ public class PlayerLogic : MonoBehaviour
 
         if (dashAbility.iconImage != null) dashAbility.iconImage.color = cooldownColor;
         if (dashAbility.cooldownText != null) dashAbility.cooldownText.gameObject.SetActive(true);
+    }
+
+    // PHASE 1: Call this when player goes invisible -> Grays out icon
+    public void SetInvisActiveUI()
+    {
+        invisAbility.isActive = true;
+        if (invisAbility.iconImage != null) invisAbility.iconImage.color = activeColor;
+        if (invisAbility.cooldownOverlay != null) invisAbility.cooldownOverlay.fillAmount = 0f;
+        if (invisAbility.cooldownText != null) invisAbility.cooldownText.gameObject.SetActive(false);
+    }
+
+    // PHASE 2: Call this when player turns visible -> Starts radial wipe & countdown
+    public void TriggerInvisCooldown()
+    {
+        invisAbility.isActive = false;
+        if (invisAbility.isCoolingDown) return;
+
+        invisAbility.currentCooldown = invisAbility.totalCooldownTime;
+        invisAbility.isCoolingDown = true;
+
+        if (invisAbility.iconImage != null) invisAbility.iconImage.color = cooldownColor;
+        if (invisAbility.cooldownText != null) invisAbility.cooldownText.gameObject.SetActive(true);
     }
 
     private void UpdateCooldown(AbilityData ability)
@@ -88,8 +119,10 @@ public class PlayerLogic : MonoBehaviour
             ability.isCoolingDown = false;
             if (ability.iconImage != null) ability.iconImage.color = readyColor;
 
-            // Optional pulse effect on the icon transform when ready
-            StartCoroutine(PulseOnReady(ability.iconImage.transform));
+            if (ability.iconImage != null)
+            {
+                StartCoroutine(PulseOnReady(ability.iconImage.transform));
+            }
         }
     }
 
