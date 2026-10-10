@@ -1,57 +1,27 @@
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
+// The server replaces each connection placeholder after the map is loaded.
 public class NetworkPlayer : NetworkBehaviour
 {
-    public bool VR_Override = false;
-
+    public bool VR_Override;
     public GameObject player_Host;
     public GameObject player_Client;
-
-    private void Start()
+    public override void OnNetworkSpawn()
     {
-        StartCoroutine(SafeStart());
+        if (IsServer) StartCoroutine(SpawnWhenMapReady());
     }
-
-    IEnumerator SafeStart()
+    IEnumerator SpawnWhenMapReady()
     {
-        yield return new WaitUntil(() => NetworkManager.Singleton != null && (NetworkManager.Singleton.IsConnectedClient || NetworkManager.Singleton.IsServer));
-        
-        if (IsOwner)
-        {
-            InitPlayer_Local();
-        }
-        else
-        {
-            InitPlayer_Other();
-        }
-    }
-
-    public void InitPlayer_Local()
-    {
-        if(IsHost && !VR_Override)
-        {
-            NetworkObject playerObject = player_Host.GetComponent<NetworkObject>();
-            NetworkManager.Singleton.SpawnManager.InstantiateAndSpawn(playerObject, NetworkObject.OwnerClientId, true, true, false, transform.position, Quaternion.identity);
-        }
-        else
-        {
-            SpawnClient_RPC();
-        }
-    }
-
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-    public void SpawnClient_RPC()
-    {
-        NetworkObject playerObject = player_Client.GetComponent<NetworkObject>();
-        NetworkManager.Singleton.SpawnManager.InstantiateAndSpawn(playerObject, NetworkObject.OwnerClientId, true, true, false, transform.position, Quaternion.identity);
-
-        Debug.Log("Spawned Client Player");
-    }
-
-    public void InitPlayer_Other()
-    {
-        Debug.Log("Other Player Initialized");
+        yield return new WaitUntil(() => SceneManager.GetSceneByName(SharedGameSession.GameScene).isLoaded);
+        if (!IsSpawned || !NetworkManager.ConnectedClients.ContainsKey(OwnerClientId)) yield break;
+        bool host = OwnerClientId == Unity.Netcode.NetworkManager.ServerClientId && !VR_Override;
+        var prefab = (host ? player_Host : player_Client).GetComponent<NetworkObject>();
+        Vector3 position = host ? Vector3.zero : new Vector3(2f + (OwnerClientId - 1) * 1.5f, 0f, 2f);
+        var player = NetworkManager.SpawnManager.InstantiateAndSpawn(prefab, OwnerClientId,
+            false, true, false, position, Quaternion.identity);
+        if (player != null) NetworkObject.Despawn();
     }
 }

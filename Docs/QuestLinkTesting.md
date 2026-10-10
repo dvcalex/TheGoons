@@ -4,8 +4,8 @@
 
 1. Open Meta Horizon Link on the PC and connect the headset. Meta is already registered as this PC's active OpenXR runtime.
 2. In the headset, launch Quest Link and enter the PC Link environment. A USB/ADB connection or a connected status in the PC app alone is not enough.
-3. Open Assets/Scenes/AlexScene.unity in Unity. The active platform for this setup is Windows. Editor Play mode uses the Standalone XR configuration.
-4. Press Play after Link is active. In VR, point a controller at the floating Host button and squeeze/release its trigger; VR skips name entry. Without XR, the desktop Game view retains name entry and mouse clicks. AlexScene currently uses local hosting (Enable Online is off), so no Relay account/session is needed for this test. See [Shared VR menu](SharedVrMenu.md).
+3. Open Assets/Scenes/StartupScene.unity in Unity. The active platform for this setup is Windows. Editor Play mode uses the Standalone XR configuration.
+4. Press Play after Link is active. In VR, point a controller at the floating Host button and squeeze/release its trigger; VR skips name entry. Without XR, the desktop Game view retains name entry and mouse clicks. StartupScene uses Relay hosting (Enable Online is on). Both devices need internet access; the host receives a join code for the desktop client. See [Shared VR menu](SharedVrMenu.md).
 5. Host_Player spawns through NetworkPlayer. The menu camera is destroyed on connection. The headset camera and the two small controller cubes should now track.
 6. If Link was started after Play, stop Play and start it again to retry XR initialization.
 

@@ -28,6 +28,14 @@ public class RelayManager : MonoBehaviour
 
     string lobbyCode;
     bool startingHost;
+    bool startingClient;
+    SharedGameSession session;
+
+    void Awake()
+    {
+        session = GetComponent<SharedGameSession>();
+        if (session == null) session = gameObject.AddComponent<SharedGameSession>();
+    }
 
     public TMP_Text lobbyCodeDisplay;
 
@@ -53,35 +61,32 @@ public class RelayManager : MonoBehaviour
 
     public async Task Client()
     {
+        var manager = NetworkManager.Singleton;
+        if (startingClient || manager.IsListening) return;
+        startingClient = true;
         errorDisplay.text = "";
-        lobbyCode = lobbyCodeInput.text.ToUpper();
-
+        lobbyCode = lobbyCodeInput.text.Trim().ToUpperInvariant();
         screen_JoinHost.SetActive(false);
         screen_Connecting.SetActive(true);
-
-        if (!enableOnline)
+        try
         {
-            NetworkManager.Singleton.StartClient();
-            all.SetActive(false);
-            return;
-        }
-
-        bool result = await StartClientWithRelay(lobbyCode, CONNECTIONTYPE);
-
-        if (result)
-        {
-            lobbyCodeDisplay.text = lobbyCode.ToString();
-            errorDisplay.text = "Client started successfully.";
-
+            bool started = enableOnline ? await StartClientWithRelay(lobbyCode, CONNECTIONTYPE) : manager.StartClient();
+            if (!started) throw new System.InvalidOperationException("Connection could not start. Check the join code.");
+            float deadline = Time.realtimeSinceStartup + 30f;
+            while (!manager.IsConnectedClient && manager.IsListening && Time.realtimeSinceStartup < deadline)
+                await Task.Delay(100);
+            if (!manager.IsConnectedClient) throw new System.TimeoutException("Connection timed out. Check the host and join code.");
+            lobbyCodeDisplay.text = lobbyCode;
             all.SetActive(false);
         }
-        else
+        catch (System.Exception exception)
         {
-            errorDisplay.text = "Failed to start client.";
-
+            if (manager.IsListening) manager.Shutdown();
+            errorDisplay.text = exception.Message;
             screen_Connecting.SetActive(false);
             screen_JoinHost.SetActive(true);
         }
+        finally { startingClient = false; }
     }
 
     public void InitHost()
@@ -112,10 +117,12 @@ public class RelayManager : MonoBehaviour
                 lobbyCodeDisplay.text = code;
                 GUIUtility.systemCopyBuffer = code;
             }
+            session.LoadGame();
             all.SetActive(false);
         }
         catch (System.Exception exception)
         {
+            if (NetworkManager.Singleton.IsListening) NetworkManager.Singleton.Shutdown();
             errorDisplay.text = "Failed to start host. Please try again.";
             Debug.LogWarning($"Host startup failed: {exception.Message}");
             screen_Connecting.SetActive(false);

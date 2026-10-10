@@ -21,8 +21,11 @@ MonoBehaviour:
   m_OverrideGlobalSceneList: 1
   m_Scenes:
   - m_enabled: 1
-    m_path: Assets/Scenes/AlexScene.unity
+    m_path: Assets/Scenes/StartupScene.unity
     m_guid: 1b938d4dba68abc48babec07932a5919
+  - m_enabled: 1
+    m_path: Assets/Scenes/GameplayScene.unity
+    m_guid: ddd751dd6aa20a541abc84a550ebcba8
   m_HasScriptingDefines: 0
   m_ScriptingDefines: []
   m_PlayerSettingsYaml:
