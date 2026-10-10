@@ -27,6 +27,7 @@ public class RelayManager : MonoBehaviour
     public TMP_InputField lobbyCodeInput;
 
     string lobbyCode;
+    bool startingHost;
 
     public TMP_Text lobbyCodeDisplay;
 
@@ -90,35 +91,37 @@ public class RelayManager : MonoBehaviour
 
     public async Task Host()
     {
+        if (startingHost || NetworkManager.Singleton.IsListening) return;
+        startingHost = true;
         errorDisplay.text = "";
         screen_JoinHost.SetActive(false);
         screen_Connecting.SetActive(true);
 
-        if (!enableOnline)
+        try
         {
-            NetworkManager.Singleton.StartHost();
+            if (!enableOnline)
+            {
+                if (!NetworkManager.Singleton.StartHost())
+                    throw new System.InvalidOperationException("Local host could not start.");
+            }
+            else
+            {
+                string code = await StartHostWithRelay(10, CONNECTIONTYPE);
+                if (string.IsNullOrEmpty(code))
+                    throw new System.InvalidOperationException("Relay host could not start.");
+                lobbyCodeDisplay.text = code;
+                GUIUtility.systemCopyBuffer = code;
+            }
             all.SetActive(false);
-            return;
         }
-
-        string code = await StartHostWithRelay(10, CONNECTIONTYPE);
-
-        if (!string.IsNullOrEmpty(code))
+        catch (System.Exception exception)
         {
-            lobbyCodeDisplay.text = code.ToString();
-            //errorDisplay.text = $"Host started successfully. Join code: {code}";
-
-            GUIUtility.systemCopyBuffer = code;
-
-            all.SetActive(false);
-        }
-        else
-        {
-            errorDisplay.text = "Failed to start host.";
-
+            errorDisplay.text = "Failed to start host. Please try again.";
+            Debug.LogWarning($"Host startup failed: {exception.Message}");
             screen_Connecting.SetActive(false);
             screen_JoinHost.SetActive(true);
         }
+        finally { startingHost = false; }
     }
 
     #region RELAY
