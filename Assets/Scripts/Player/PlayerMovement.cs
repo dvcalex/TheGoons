@@ -26,6 +26,7 @@ public class PlayerMovement : NetworkBehaviour
     public float airAcceleration = 12f;
     public float groundDeceleration = 65f;
     public float directionChangeAcceleration = 75f;
+    public float dashForce = 25f;
     [Tooltip("Velocity servo response in 1/seconds. Higher is snappier.")]
     public float velocityGain = 18f;
     [Tooltip("Damping on measured acceleration, not input changes (no derivative kick).")]
@@ -187,6 +188,10 @@ public class PlayerMovement : NetworkBehaviour
         crouchInput = crouchAction.IsPressed();
         runInput = runAction.IsPressed();
         jumpHeld = jumpAction.IsPressed();
+
+        if (Player.me._input.actions["Dash"].WasPressedThisFrame()) 
+            Dash();
+
         if (!locked && !isStunned && jumpAction.WasPressedThisFrame()) jumpBufferLeft = jumpBufferTime;
         if (anim != null)
         {
@@ -227,7 +232,7 @@ public class PlayerMovement : NetworkBehaviour
         if (isGrounded && !jumpConsumed)
             rb.AddForce(-groundNormal * groundStickAcceleration, ForceMode.Acceleration);
         if (mouseLook != null)
-            mouseLook.SetZoom(mouseLook.defaultFOV + Mathf.Clamp01(RelativeVelocity.magnitude / runSpeed) * 6f, 35f);
+            mouseLook.SetZoom(mouseLook.defaultFOV + Mathf.Clamp01(RelativeVelocity.magnitude / runSpeed) * 6f);
         if (IsSpawned)
         {
             float yaw = rb.rotation.eulerAngles.y;
@@ -300,6 +305,11 @@ public class PlayerMovement : NetworkBehaviour
             }
         }
         walking = isGrounded && isMoving && !running && !crouching;
+    }
+
+    public void Dash()
+    {
+        rb.AddForce(moveInput.normalized * dashForce, ForceMode.Impulse);
     }
 
     private void ApplyMovement(float dt)
