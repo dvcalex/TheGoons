@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.hunter-production.new-libre-fracture": {
+      "version": "file:com.hunter-production.new-libre-fracture",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ext.nunit": "1.0.0"
+      }
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 0,
