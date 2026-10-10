@@ -11,7 +11,7 @@ public class PlayerLogic : MonoBehaviour
     public class AbilityData
     {
         public string abilityName = "Ability";
-        public float totalCooldownTime = 5f; // Set this to your actual cooldown length in the Inspector
+        public float totalCooldownTime = 3f; // Set this to your actual cooldown length in the Inspector
 
         [Header("UI References")]
         public RawImage iconImage;

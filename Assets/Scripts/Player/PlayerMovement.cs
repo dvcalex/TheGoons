@@ -34,6 +34,8 @@ public class PlayerMovement : NetworkBehaviour
     public float dashSpeed = 35f;
     public float dashDuration = 0.10f;
     public float dashBrake = 180f;
+    public float dashCooldownTime = 3f;
+    private float dashCooldownTimer = 0f;
 
     private float dashTimer;
     private Vector3 dashDirection;
@@ -254,6 +256,7 @@ public class PlayerMovement : NetworkBehaviour
         if (IsSpawned && !IsOwner) ApplyRemotePose(1f - Mathf.Exp(-30f * Time.fixedDeltaTime));
         if (!HasControl || rb.isKinematic) return;
         float dt = Time.fixedDeltaTime;
+        dashCooldownTimer = Mathf.Max(0f, dashCooldownTimer - dt);
         CheckGrounded(dt);
         ProcessKnockback();
         if (!locked && !isStunned)
@@ -375,7 +378,8 @@ public class PlayerMovement : NetworkBehaviour
 
     public void Dash()
     {
-        if (!HasControl || locked || isStunned || dashTimer > 0f)
+        // Check dashCooldownTimer instead of dashTimer so it respects the cooldown
+        if (!HasControl || locked || isStunned || dashCooldownTimer > 0f)
             return;
 
         dashDirection = Quaternion.Euler(0f, FacingYaw, 0f)
@@ -388,7 +392,6 @@ public class PlayerMovement : NetworkBehaviour
 
         Vector3 velocity = rb.linearVelocity;
 
-        // Instantly launch at full dash speed.
         Vector3 targetVelocity = dashDirection * dashSpeed;
 
         Vector3 velocityChange = targetVelocity
@@ -400,7 +403,16 @@ public class PlayerMovement : NetworkBehaviour
             ragdoll.AddVelocityChange(velocityChange);
 
         dashTimer = dashDuration;
+
+        // ---> TRIGGER THE COOLDOWN HERE <---
+        dashCooldownTimer = dashCooldownTime;
         servo.Reset();
+
+        // Notify your UI Manager (ensure your UI script class name matches this)
+        if (PlayerLogic.Instance != null)
+        {
+            PlayerLogic.Instance.TriggerDashCooldown();
+        }
     }
 
     private void ApplyMovement(float dt)
