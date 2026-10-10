@@ -10,10 +10,10 @@ public class NetworkConnector : MonoBehaviour
 
     private void Start()
     {
-        if (UseRelay)
-            InitRelay();
-        else
-            InitDebug();
+        //if (UseRelay)
+        //    InitRelay();
+        //else
+        //    InitDebug();
     }
 
     public void InitRelay()

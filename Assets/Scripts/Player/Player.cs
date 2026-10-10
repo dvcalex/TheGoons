@@ -41,6 +41,8 @@ public class Player : NetworkBehaviour
 
         foreach(Renderer r in renderers_ShadowsOnly_Local)
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+
+        Server._instance.ConnectPlayer_RPC(NetworkObjectId);
     }
 
     public void InitOther()
@@ -53,5 +55,11 @@ public class Player : NetworkBehaviour
 
         foreach(Renderer r in renderers_ShadowsOnly_Other)
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+    }
+
+    public override void OnNetworkPreDespawn()
+    {
+        if(IsOwner)
+            Server._instance.DisconnectPlayer_RPC(NetworkObjectId);
     }
 }
