@@ -8,6 +8,9 @@ public class PlayerRagdollManager : MonoBehaviour
 
     public GameObject defaultCam;
 
+    public Transform repositionPivot;
+    public Transform root;
+
     [Space]
 
     public GameObject ragdollObj;
@@ -21,18 +24,32 @@ public class PlayerRagdollManager : MonoBehaviour
 
         if(!state)
         {
-            // Disable ragdoll
+            // Remember where the ragdoll currently is.
+            Vector3 ragdollWorldPos = ragdollRigData.transform.position;
+            Quaternion ragdollWorldRot = ragdollRigData.transform.rotation;
 
+            // Calculate where the player should wake up.
+            Vector3 targetPosition = repositionPivot.position;
+
+            // Move the player root.
+            root.position = targetPosition;
+
+            // Restore the ragdoll's world transform.
+            ragdollRigData.transform.SetPositionAndRotation(
+                ragdollWorldPos,
+                ragdollWorldRot
+            );
+
+            Physics.SyncTransforms();
+
+            // Start transitioning back to the player rig.
             ragdollRigData.SetRigLerp(playerRigData);
-
-            transform.position = ragdollRigData.transform.position;
-            ragdollRigData.transform.localPosition = Vector3.zero;
 
             StartCoroutine(WaitTillRagdollComplete());
         }
         else
         {
-            // Enable ragdoll
+            // Knock out
 
             ragdollRigData.transform.position = transform.position;
             ragdollRigData.transform.rotation = transform.rotation;

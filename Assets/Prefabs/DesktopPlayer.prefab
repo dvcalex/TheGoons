@@ -1015,6 +1015,8 @@ MonoBehaviour:
   playerRigData: {fileID: 5220621509275130288}
   ragdollRigData: {fileID: 7688466325827149762}
   defaultCam: {fileID: 1427360152598088455}
+  repositionPivot: {fileID: 543031194723198142}
+  root: {fileID: 8815569425475547774}
   ragdollObj: {fileID: 4971213641080593346}
   renderers:
   - {fileID: 8614394827324985532}
@@ -1387,6 +1389,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 6541734032905428500}
   m_SourcePrefab: {fileID: 100100000, guid: cd21db0e763965b4691b156d95755fcf, type: 3}
+--- !u!4 &543031194723198142 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4961243173226140390, guid: cd21db0e763965b4691b156d95755fcf, type: 3}
+  m_PrefabInstance: {fileID: 4850618278098728536}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &2025147124908347342 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6866334715478522262, guid: cd21db0e763965b4691b156d95755fcf, type: 3}
