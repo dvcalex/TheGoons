@@ -17,6 +17,9 @@ public class PlayerMovement : NetworkBehaviour
     public Transform groundCheck;
     public Animator anim;
 
+    float currentAnimationSpeed = 0f;
+    float desiredAnimationSpeed = 0f;
+
     [Header("Movement feel")]
     public float walkSpeed = 4.8f;
     public float crouchWalkSpeed = 2.4f;
@@ -31,6 +34,8 @@ public class PlayerMovement : NetworkBehaviour
     public float dashSpeed = 35f;
     public float dashDuration = 0.10f;
     public float dashBrake = 180f;
+    public float dashCooldownTime = 3f;
+    private float dashCooldownTimer = 0f;
 
     private float dashTimer;
     private Vector3 dashDirection;
@@ -192,7 +197,15 @@ public class PlayerMovement : NetworkBehaviour
 
     private void Update()
     {
-        if (!HasControl || _player._input == null || !_player._input.enabled) return;
+        //Debug.Log("Ragdoll State: " + Player.me._ragdollManager.isRagdoll);
+        anim.SetBool("Enabled", !Player.me._ragdollManager.isRagdoll);
+
+        if (!HasControl || _player._input == null || !_player._input.enabled || Player.me._ragdollManager.isRagdoll) 
+        {
+            moveInput = Vector2.zero;
+            return;
+        } 
+        
         if (moveAction == null)
         {
             var actions = _player._input.actions;
@@ -210,14 +223,32 @@ public class PlayerMovement : NetworkBehaviour
             Dash();
 
         if (!locked && !isStunned && jumpAction.WasPressedThisFrame()) jumpBufferLeft = jumpBufferTime;
-        if (anim != null)
+        //if (anim != null)
+        //{
+        //    Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, FacingYaw, 0f)) * RelativeVelocity;
+        //    anim.SetFloat(moveXVar, local.x / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
+        //    anim.SetFloat(moveZVar, local.z / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
+        //    anim.SetBool("IsGrounded", isGrounded);
+        //    anim.SetBool("Crouching", crouching);
+        //}
+
+        if (runAction.IsPressed())
         {
-            Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, FacingYaw, 0f)) * RelativeVelocity;
-            anim.SetFloat(moveXVar, local.x / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
-            anim.SetFloat(moveZVar, local.z / walkSpeed, 1f / animChangeSpeed, Time.deltaTime);
-            anim.SetBool("IsGrounded", isGrounded);
-            anim.SetBool("Crouching", crouching);
+            desiredAnimationSpeed = 1f;
         }
+        else if (walking)
+        {
+            desiredAnimationSpeed = 0.5f;
+        }
+        else
+        {
+            desiredAnimationSpeed = 0f;
+        }
+
+        currentAnimationSpeed = Mathf.Lerp(currentAnimationSpeed, desiredAnimationSpeed, 1f - Mathf.Exp(-animChangeSpeed * Time.deltaTime));
+
+        anim.SetFloat("Speed", currentAnimationSpeed);
+
     }
 
     private void FixedUpdate()
@@ -225,6 +256,7 @@ public class PlayerMovement : NetworkBehaviour
         if (IsSpawned && !IsOwner) ApplyRemotePose(1f - Mathf.Exp(-30f * Time.fixedDeltaTime));
         if (!HasControl || rb.isKinematic) return;
         float dt = Time.fixedDeltaTime;
+        dashCooldownTimer = Mathf.Max(0f, dashCooldownTimer - dt);
         CheckGrounded(dt);
         ProcessKnockback();
         if (!locked && !isStunned)
@@ -346,7 +378,8 @@ public class PlayerMovement : NetworkBehaviour
 
     public void Dash()
     {
-        if (!HasControl || locked || isStunned || dashTimer > 0f)
+        // Check dashCooldownTimer instead of dashTimer so it respects the cooldown
+        if (!HasControl || locked || isStunned || dashCooldownTimer > 0f)
             return;
 
         dashDirection = Quaternion.Euler(0f, FacingYaw, 0f)
@@ -359,7 +392,6 @@ public class PlayerMovement : NetworkBehaviour
 
         Vector3 velocity = rb.linearVelocity;
 
-        // Instantly launch at full dash speed.
         Vector3 targetVelocity = dashDirection * dashSpeed;
 
         Vector3 velocityChange = targetVelocity
@@ -371,7 +403,16 @@ public class PlayerMovement : NetworkBehaviour
             ragdoll.AddVelocityChange(velocityChange);
 
         dashTimer = dashDuration;
+
+        // ---> TRIGGER THE COOLDOWN HERE <---
+        dashCooldownTimer = dashCooldownTime;
         servo.Reset();
+
+        // Notify your UI Manager (ensure your UI script class name matches this)
+        if (PlayerLogic.Instance != null)
+        {
+            PlayerLogic.Instance.TriggerDashCooldown();
+        }
     }
 
     private void ApplyMovement(float dt)
