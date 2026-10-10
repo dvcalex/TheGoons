@@ -195,6 +195,9 @@ public class PlayerMovement : NetworkBehaviour
 
     private void Update()
     {
+        if (!IsOwner)
+            return;
+
         //Debug.Log("Ragdoll State: " + Player.me._ragdollManager.isRagdoll);
         anim.SetBool("Enabled", !Player.me._ragdollManager.isRagdoll);
 
