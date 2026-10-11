@@ -412,9 +412,9 @@ public class PlayerMovement : NetworkBehaviour
         servo.Reset();
 
         // Notify your UI Manager (ensure your UI script class name matches this)
-        if (PlayerLogic.Instance != null)
+        if (Player.me._logic != null)
         {
-            PlayerLogic.Instance.TriggerDashCooldown();
+            Player.me._logic.TriggerDashCooldown();
         }
     }
 
