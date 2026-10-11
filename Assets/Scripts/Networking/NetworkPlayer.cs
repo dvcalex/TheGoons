@@ -54,7 +54,7 @@ public class NetworkPlayer : NetworkBehaviour
             false,
             true,
             false,
-            position,
+            PlayerSpawn._instance.transform.position,
             Quaternion.identity
         );
 
