@@ -8,7 +8,7 @@ public class Server : NetworkBehaviour
 {
     public static Server _instance;
     
-    private List<Player> _players = new List<Player>();
+    public List<Player> _players = new List<Player>();
 
     public Action onPlayerListUpdated;
 
