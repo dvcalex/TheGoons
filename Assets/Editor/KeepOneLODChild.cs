@@ -9,9 +9,11 @@ public class KeepOneLODChild
     {
         if (!EditorUtility.DisplayDialog(
                 "Keep One LOD Child",
-                "This will keep the first child inside each " +
-                "'LOD Group' GameObject and delete the others " +
-                "in all prefabs.\n\nContinue?",
+                "This will process all prefabs.\n\n" +
+                "For every GameObject containing an LODGroup:\n" +
+                "- Remove the LODGroup component\n" +
+                "- Keep the first child\n" +
+                "- Delete all remaining children\n\nContinue?",
                 "Continue",
                 "Cancel"))
         {
@@ -21,6 +23,7 @@ public class KeepOneLODChild
         string[] prefabGuids = AssetDatabase.FindAssets("t:Prefab");
 
         int modifiedCount = 0;
+        int removedLODGroupCount = 0;
         int deletedCount = 0;
 
         try
@@ -40,27 +43,33 @@ public class KeepOneLODChild
 
                 try
                 {
-                    Transform[] transforms =
-                        prefab.GetComponentsInChildren<Transform>(true);
+                    // Include inactive children and nested hierarchy objects.
+                    LODGroup[] lodGroups =
+                        prefab.GetComponentsInChildren<LODGroup>(true);
 
                     bool modified = false;
 
-                    foreach (Transform lodGroup in transforms)
+                    foreach (LODGroup lodGroup in lodGroups)
                     {
-                        if (lodGroup == null ||
-                            lodGroup.name != "LOD Group")
+                        if (lodGroup == null)
                             continue;
 
-                        // Keep the prefab hierarchy intact.
-                        // Only process children of "LOD Group".
-                        while (lodGroup.childCount > 1)
+                        Transform lodTransform = lodGroup.transform;
+
+                        // Remove the LODGroup component itself.
+                        Object.DestroyImmediate(lodGroup);
+                        removedLODGroupCount++;
+                        modified = true;
+
+                        // Keep the first direct child and delete the rest.
+                        while (lodTransform.childCount > 1)
                         {
                             Transform child =
-                                lodGroup.GetChild(lodGroup.childCount - 1);
+                                lodTransform.GetChild(
+                                    lodTransform.childCount - 1);
 
                             Object.DestroyImmediate(child.gameObject);
                             deletedCount++;
-                            modified = true;
                         }
                     }
 
@@ -88,6 +97,7 @@ public class KeepOneLODChild
             "Complete",
             $"Processed {prefabGuids.Length} prefabs.\n" +
             $"Modified prefabs: {modifiedCount}\n" +
+            $"Removed LODGroup components: {removedLODGroupCount}\n" +
             $"Deleted children: {deletedCount}",
             "OK");
     }

@@ -508,8 +508,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: EA_Roof_01a_PRE
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedComponents:
+    - {fileID: 2008181634100330431, guid: 746ffc8b5947a5f438a93068a7fcc424, type: 3}
+    m_RemovedGameObjects:
+    - {fileID: 2828526324191599108, guid: 746ffc8b5947a5f438a93068a7fcc424, type: 3}
+    - {fileID: 8922955207677096255, guid: 746ffc8b5947a5f438a93068a7fcc424, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 746ffc8b5947a5f438a93068a7fcc424, type: 3}
@@ -1198,7 +1201,8 @@ PrefabInstance:
       propertyPath: m_LODs.Array.data[2].renderers.Array.data[0].renderer
       value: 
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4157318379595987978, guid: 377d225ecc6d4674ebd0a7deb503b5c7, type: 3}
     m_RemovedGameObjects:
     - {fileID: 5260758006632753659, guid: 377d225ecc6d4674ebd0a7deb503b5c7, type: 3}
     - {fileID: 2676883039859682297, guid: 377d225ecc6d4674ebd0a7deb503b5c7, type: 3}
@@ -1494,7 +1498,8 @@ PrefabInstance:
       propertyPath: m_LODs.Array.data[2].renderers.Array.data[0].renderer
       value: 
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4157318379595987978, guid: 377d225ecc6d4674ebd0a7deb503b5c7, type: 3}
     m_RemovedGameObjects:
     - {fileID: 5260758006632753659, guid: 377d225ecc6d4674ebd0a7deb503b5c7, type: 3}
     - {fileID: 2676883039859682297, guid: 377d225ecc6d4674ebd0a7deb503b5c7, type: 3}

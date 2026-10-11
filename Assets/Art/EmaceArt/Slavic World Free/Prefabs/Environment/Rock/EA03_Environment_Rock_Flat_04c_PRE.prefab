@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8596729061025310402}
-  - component: {fileID: 8695918328008264942}
   m_Layer: 0
   m_Name: LOD Group
   m_TagString: Untagged
@@ -33,34 +32,6 @@ Transform:
   - {fileID: 8481675405348609587}
   m_Father: {fileID: 9121121707941527626}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!205 &8695918328008264942
-LODGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 593657532838273941}
-  serializedVersion: 3
-  m_LocalReferencePoint: {x: -0.28600693, y: 1.3665471, z: -0.3839178}
-  m_Size: 19.630749
-  m_FadeMode: 0
-  m_AnimateCrossFading: 0
-  m_LastLODIsBillboard: 0
-  m_LODs:
-  - screenRelativeHeight: 0.6
-    fadeTransitionWidth: 0
-    renderers:
-    - renderer: {fileID: 7315596388130630562}
-  - screenRelativeHeight: 0.35
-    fadeTransitionWidth: 0
-    renderers:
-    - renderer: {fileID: 0}
-  - screenRelativeHeight: 0.18
-    fadeTransitionWidth: 0
-    renderers:
-    - renderer: {fileID: 0}
-  m_Enabled: 1
-  m_GlobalIlluminationLOD: 0
 --- !u!1 &5246660610424533593
 GameObject:
   m_ObjectHideFlags: 0

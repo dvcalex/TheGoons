@@ -596,7 +596,8 @@ PrefabInstance:
       propertyPath: m_LODs.Array.data[2].renderers.Array.data[0].renderer
       value: 
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2753764021237380891, guid: 703b74a326cc6a640803dfc6729475bb, type: 3}
     m_RemovedGameObjects:
     - {fileID: 8902018016456374670, guid: 703b74a326cc6a640803dfc6729475bb, type: 3}
     - {fileID: 5360000711775846309, guid: 703b74a326cc6a640803dfc6729475bb, type: 3}
