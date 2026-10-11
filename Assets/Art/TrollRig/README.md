@@ -31,3 +31,7 @@ Hands use 5x head-relative reach plus a 2.5 m forward offset, limited to 7 m fro
 Each hand has 15 finger joints. Grip smoothly adds local finger flexion; thumb flexion is reduced. Visual wrists follow the physical hands, and shoulders follow headset yaw. The original capsule arms and fixed curled-hand meshes are removed from TrollRig. The source model had no supplied texture; the derived material uses a plain skin tone.
 
 Validated in Unity: four rigidbodies, no permanent arm joints, intact Host_Player references, open/closed finger deformation, visual wrist alignment, PID settling for 8 kg and 80 kg bodies, and a hand blocked by a static wall. Compilation also passed. A fresh headset build is still needed to judge comfort, reach and grab feel.
+
+## Hand alignment and contact
+
+Select LeftFist or RightFist in TrollRig prefab isolation. On VrPhysicsHand, Use Controller Aim makes the open fingers follow the same pointing direction as the controller ray. Controller Rotation Offset adds pitch/yaw/roll in that frame; change it to tune your controller grip. The offset rotates the Rigidbody target, collider and visual together. The baked Scout handRotationOffset only converts the model's bone axes and should normally stay unchanged.

@@ -4,6 +4,12 @@ using UnityEngine;
 public sealed class VrPhysicsHand : MonoBehaviour
 {
     public VrPidMotor motor = new VrPidMotor();
+    [Header("Controller alignment")]
+    [Tooltip("Use the controller's pointing direction for the fingers, instead of its grip pose.")]
+    public bool useControllerAim = true;
+    [Tooltip("Extra pitch, yaw and roll in controller space. Rotates the physical hand, collider and visual together.")]
+    public Vector3 controllerRotationOffset;
+
     public LayerMask grabbableLayers = 1 << 10;
     public float grabRadius = 0.5f;
     public float maximumGrabMass = 50f;

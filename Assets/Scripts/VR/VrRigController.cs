@@ -108,8 +108,8 @@ public sealed class VrRigController : MonoBehaviour
         headAuthority = Mathf.MoveTowards(headAuthority, 1f, Time.fixedDeltaTime / 0.12f);
         headMotor.Drive(physicalHead, trackingSpace.TransformPoint(headPosition), worldRotation, headAuthority);
         var leftDevice = InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);
-        DriveHand(leftHand, leftDevice, -1f);
-        DriveHand(rightHand, InputDevices.GetDeviceAtXRNode(XRNode.RightHand), 1f);
+        DriveHand(leftHand, leftDevice, UnityEngine.InputSystem.XR.XRController.leftHand, -1f);
+        DriveHand(rightHand, InputDevices.GetDeviceAtXRNode(XRNode.RightHand), UnityEngine.InputSystem.XR.XRController.rightHand, 1f);
         Travel(leftDevice, worldRotation);
     }
 
@@ -123,16 +123,31 @@ public sealed class VrRigController : MonoBehaviour
         return physicalHead.transform.position + Facing * new Vector3(side * shoulderWidth, -shoulderDrop, 0f);
     }
 
-    private void DriveHand(VrPhysicsHand hand, InputDevice device, float side)
+    private void DriveHand(VrPhysicsHand hand, InputDevice device, UnityEngine.InputSystem.XR.XRController controller, float side)
     {
         bool valid = ReadPose(device, out Vector3 position, out Quaternion rotation);
+        if (hand.useControllerAim && controller != null && controller.isTracked.isPressed)
+        {
+            var aim = controller.TryGetChildControl<UnityEngine.InputSystem.Controls.QuaternionControl>("pointerRotation");
+            if (aim != null)
+            {
+                Quaternion aimRotation = aim.ReadValue();
+                float length = Quaternion.Dot(aimRotation, aimRotation);
+                if (length > 0.001f && !float.IsInfinity(length))
+                {
+                    rotation = aimRotation.normalized;
+                }
+            }
+        }
+
         device.TryGetFeatureValue(CommonUsages.grip, out float grip);
         Vector3 headWorld = trackingSpace.TransformPoint(headPosition);
         Vector3 offset = trackingSpace.TransformVector(position - headPosition) * reachMultiplier;
         Vector3 target = headWorld + offset + Facing * Vector3.forward * forwardReach;
         Vector3 shoulder = ShoulderPosition(side);
         target = shoulder + Vector3.ClampMagnitude(target - shoulder, maximumReach);
-        hand.SetTarget(target, trackingSpace.rotation * rotation, grip, valid);
+        Quaternion handRotation = trackingSpace.rotation * rotation * Quaternion.Euler(hand.controllerRotationOffset);
+        hand.SetTarget(target, handRotation, grip, valid);
     }
 
     private void Travel(InputDevice device, Quaternion viewRotation)

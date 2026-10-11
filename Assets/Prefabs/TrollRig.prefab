@@ -546,6 +546,8 @@ MonoBehaviour:
     rotationDamping: 14
     maximumAcceleration: 120
     maximumAngularAcceleration: 100
+  useControllerAim: 1
+  controllerRotationOffset: {x: 0, y: 0, z: 0}
   grabbableLayers:
     serializedVersion: 2
     m_Bits: 1024
@@ -770,6 +772,8 @@ MonoBehaviour:
     rotationDamping: 14
     maximumAcceleration: 120
     maximumAngularAcceleration: 100
+  useControllerAim: 1
+  controllerRotationOffset: {x: 0, y: 0, z: 0}
   grabbableLayers:
     serializedVersion: 2
     m_Bits: 1024
