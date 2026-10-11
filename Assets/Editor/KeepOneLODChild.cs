@@ -32,7 +32,9 @@ public class KeepOneLODChild
             {
                 string path =
                     AssetDatabase.GUIDToAssetPath(prefabGuids[i]);
-
+                // Skip prefabs inside Assets/Prefabs directory
+                if (path.StartsWith("Assets/Prefabs"))
+                    continue;
                 EditorUtility.DisplayProgressBar(
                     "Processing Prefabs",
                     path,
