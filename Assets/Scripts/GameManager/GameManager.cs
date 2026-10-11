@@ -62,6 +62,11 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI hidersCountText;
 
+    [Header("Debug")]
+    [SerializeField] private bool isDebugging;
+    [SerializeField] private GamePhase debugPhase = GamePhase.Lobby;
+    [SerializeField] private RoundResult debugResult = RoundResult.None;
+
     private readonly List<Player> remainingHiders = new();
     private bool changingPhase;
 
@@ -76,6 +81,12 @@ public class GameManager : MonoBehaviour
         _instance = this;
         timeRemaining = roundDuration;
 
+        if (isDebugging)
+        {
+            debugPhase = CurrentPhase;
+            debugResult = Result;
+        }
+
         UpdateUI();
         InstanceChanged?.Invoke(this);
     }
@@ -89,6 +100,38 @@ public class GameManager : MonoBehaviour
 
         _instance = null;
         InstanceChanged?.Invoke(null);
+    }
+
+    private void OnValidate()
+    {
+        if (!Application.isPlaying || !isDebugging)
+        {
+            return;
+        }
+
+        // Handle Phase changes from Inspector
+        if (debugPhase != CurrentPhase)
+        {
+            if (debugPhase == GamePhase.Lobby)
+            {
+                ReturnToLobbyInternal();
+            }
+            else if (debugPhase == GamePhase.Playing)
+            {
+                StartGameInternal();
+            }
+            else if (debugPhase == GamePhase.Results)
+            {
+                // Fallback to a default result if none selected when switching to Results via Inspector
+                RoundResult targetResult = debugResult == RoundResult.None ? RoundResult.HidersWin : debugResult;
+                EndGameInternal(targetResult);
+            }
+        }
+        // Handle Result changes while already in Results phase
+        else if (CurrentPhase == GamePhase.Results && debugResult != Result && debugResult != RoundResult.None)
+        {
+            EndGameInternal(debugResult);
+        }
     }
 
     private void Update()
@@ -114,11 +157,16 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
-        if (CurrentPhase != GamePhase.Lobby || !CanControlRound())
+        if (!isDebugging && (CurrentPhase != GamePhase.Lobby || !CanControlRound()))
         {
             return;
         }
 
+        StartGameInternal();
+    }
+
+    private void StartGameInternal()
+    {
         IEnumerable<Player> hiders = players;
 
         if (Server._instance != null && Server._instance.IsSpawned)
@@ -139,13 +187,16 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        if (HidersCount == 0)
+        if (HidersCount == 0 && !isDebugging)
         {
             return;
         }
 
         timeRemaining = roundDuration;
         ChangePhase(GamePhase.Playing);
+
+        debugPhase = CurrentPhase;
+        debugResult = Result;
     }
 
     public void OnHiderDeath(Player hider)
@@ -179,21 +230,34 @@ public class GameManager : MonoBehaviour
 
     public void EndGame(RoundResult result)
     {
-        if (!timerIsRunning || !CanControlRound() || result == RoundResult.None)
+        if (!isDebugging && (!timerIsRunning || !CanControlRound() || result == RoundResult.None))
         {
             return;
         }
 
+        EndGameInternal(result);
+    }
+
+    private void EndGameInternal(RoundResult result)
+    {
         ChangePhase(GamePhase.Results, result);
+
+        debugPhase = CurrentPhase;
+        debugResult = Result;
     }
 
     public void ReturnToLobby()
     {
-        if (CurrentPhase == GamePhase.Lobby || !CanControlRound())
+        if (!isDebugging && (CurrentPhase == GamePhase.Lobby || !CanControlRound()))
         {
             return;
         }
 
+        ReturnToLobbyInternal();
+    }
+
+    private void ReturnToLobbyInternal()
+    {
         if (timerIsRunning)
         {
             EndGame(RoundResult.Cancelled);
@@ -203,6 +267,9 @@ public class GameManager : MonoBehaviour
         timeRemaining = roundDuration;
 
         ChangePhase(GamePhase.Lobby);
+
+        debugPhase = CurrentPhase;
+        debugResult = Result;
     }
 
     private void ChangePhase(GamePhase phase, RoundResult result = RoundResult.None)
@@ -248,6 +315,11 @@ public class GameManager : MonoBehaviour
 
     private bool CanControlRound()
     {
+        if (isDebugging)
+        {
+            return true;
+        }
+
         var network = Unity.Netcode.NetworkManager.Singleton;
 
         if (changingPhase)
