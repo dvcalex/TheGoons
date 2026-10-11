@@ -5,6 +5,10 @@ using EZCameraShake;
 
 public class Player : NetworkBehaviour
 {
+    public NetworkVariable<float> health = new NetworkVariable<float>(100f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    public bool _isDead;
+
     public static Player me;
     public PlayerInput _input;
     public PlayerMovement _movement;
@@ -22,6 +26,10 @@ public class Player : NetworkBehaviour
     [Space]
     public GameObject[] objects_Disable_Local;
     public Renderer[] renderers_ShadowsOnly_Local;
+
+    [Space]
+    public GameObject[] onDeathObjs;
+    public GameObject[] spectatorObjs;
 
     [Header("Invisibility Ability")]
     public float invisDuration = 5f; // Set this to 5 seconds
@@ -210,5 +218,33 @@ public class Player : NetworkBehaviour
 
         obj.GetComponent<Rigidbody>().AddForce((obj.transform.position - transform.position).normalized, ForceMode.Impulse);
         obj.GetComponent<Rigidbody>().AddTorque(obj.transform.forward, ForceMode.Impulse);
+    }
+
+    [Rpc(SendTo.Owner, InvokePermission = RpcInvokePermission.Everyone)]
+    public void Damage_RPC(float damage)
+    {
+        health.Value -= damage;
+
+        if (health.Value <= 0f)
+            SetDeathState_RPC(true);
+    }
+
+    public void OnReset()
+    {
+        SetDeathState_RPC(false);
+    }
+
+    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Owner)]
+    public void SetDeathState_RPC(bool state)
+    {
+        // Player has died
+
+        foreach (GameObject obj in spectatorObjs)
+            obj.SetActive(state);
+
+        foreach (GameObject obj in onDeathObjs)
+            obj.SetActive(!state);
+
+        _isDead = state;
     }
 }

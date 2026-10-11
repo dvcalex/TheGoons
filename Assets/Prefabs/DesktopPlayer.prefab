@@ -1373,6 +1373,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
   ShowTopMostFoldoutHeaderGroup: 1
+  health:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 100
+  _isDead: 0
   _input: {fileID: 4947597367036679604}
   _movement: {fileID: 1783135158864127520}
   _ragdollManager: {fileID: 3728800746082267998}
@@ -1399,6 +1405,8 @@ MonoBehaviour:
   - {fileID: 2791826131076364090}
   - {fileID: 2025147124908347342}
   - {fileID: 8230112942031021242}
+  onDeathObjs: []
+  spectatorObjs: []
   invisDuration: 3
   invisCooldownTime: 12
   stealthRenderers:
@@ -2535,7 +2543,6 @@ GameObject:
   - component: {fileID: 6942959392635350103}
   - component: {fileID: 3833700895584976880}
   - component: {fileID: 7699332297048472207}
-  - component: {fileID: 910044890123456789}
   - component: {fileID: 3728800746082267998}
   m_Layer: 6
   m_Name: Player
@@ -2754,26 +2761,6 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &910044890123456789
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6418211705436806482}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 52a7c904702a4f63bbef6b95eec799a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DesktopRagdoll
-  bodyMaterial: {fileID: 2100000, guid: 22ab4467faba4a142a5a906f7917178e, type: 2}
-  headMaterial: {fileID: 2100000, guid: 82249eae7d8a54c40b37f7fc72196801, type: 2}
-  poseSpring: 110
-  poseDamper: 12
-  maximumPoseTorque: 90
-  strideAngle: 28
-  strideLength: 2.5
-  impactRecovery: 5
 --- !u!114 &3728800746082267998
 MonoBehaviour:
   m_ObjectHideFlags: 0
