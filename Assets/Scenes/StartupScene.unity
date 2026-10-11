@@ -350,6 +350,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Server
   ShowTopMostFoldoutHeaderGroup: 1
+  _players: []
 --- !u!114 &277352517
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -801,7 +802,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &452854107
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1186,8 +1187,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -90}
-  m_SizeDelta: {x: 180.912, y: 34.495}
+  m_AnchoredPosition: {x: -0.000001013279, y: 0}
+  m_SizeDelta: {x: 124.9479, y: 28.7056}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &633761661
 MonoBehaviour:
@@ -1842,6 +1843,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6474106618856925271, guid: b4544e50ecccb26499eba63f75d7b166, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6474106618856925271, guid: b4544e50ecccb26499eba63f75d7b166, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2618069982
+      objectReference: {fileID: 0}
+    - target: {fileID: 6474106618856925271, guid: b4544e50ecccb26499eba63f75d7b166, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2037727928
+      objectReference: {fileID: 0}
     - target: {fileID: 7266267855847150129, guid: b4544e50ecccb26499eba63f75d7b166, type: 3}
       propertyPath: m_Name
       value: GameManager
@@ -1849,10 +1862,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7266267855847150129, guid: b4544e50ecccb26499eba63f75d7b166, type: 3}
-      insertIndex: 1
-      addedObject: {fileID: 2074591785}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b4544e50ecccb26499eba63f75d7b166, type: 3}
 --- !u!1 &886708895
 GameObject:
@@ -2102,7 +2112,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Submit
+  m_text: Connect
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c53347303652ca94fa13ff47918b55ee, type: 2}
   m_sharedMaterial: {fileID: -7536424221805115789, guid: c53347303652ca94fa13ff47918b55ee, type: 2}
@@ -2129,8 +2139,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 32
-  m_fontSizeBase: 32
+  m_fontSize: 25.77
+  m_fontSizeBase: 25.77
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -3630,38 +3640,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2041071939}
   m_CullTransparentMesh: 1
---- !u!1 &2074591782 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7266267855847150129, guid: b4544e50ecccb26499eba63f75d7b166, type: 3}
-  m_PrefabInstance: {fileID: 789931840}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2074591785
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2074591782}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2296110301
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  m_InScenePlacedDisabledByDefault: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  m_InScenePlaced: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
 --- !u!1 &2125020764
 GameObject:
   m_ObjectHideFlags: 0
