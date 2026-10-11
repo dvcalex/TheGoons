@@ -20,13 +20,13 @@ namespace LibreFracture
         }
 
         //TODO: If we use VHACD Colliders generation, there may be more than 1 collider for chunk. Consider refactor this to be a collection.
-        private MeshCollider _collider;
-        private MeshCollider Collider
+        private Collider _collider;
+        private Collider Collider
         {
             get
             {
                 if (_collider == null)
-                    _collider = GetComponent<MeshCollider>();
+                    _collider = GetComponent<Collider>();
                 return _collider;
             }
         }

@@ -78032,8 +78032,8 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &3892905190408115857
-MeshCollider:
+--- !u!65 &3892905190408115857
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -78050,10 +78050,9 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: f4d12aa65907d4f44b50590506ab96ad, type: 2}
+  serializedVersion: 3
+  m_Size: {x: 0.161407, y: 0.01, z: 0.2879644}
+  m_Center: {x: -2.6281984, y: -0.044968717, z: 0.89667106}
 --- !u!54 &5269632515953344815
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -119277,8 +119276,8 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &7866297707035627059
-MeshCollider:
+--- !u!65 &7866297707035627059
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -119295,10 +119294,9 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 18c75d57288747e4abe9cd0851c5e2ec, type: 2}
+  serializedVersion: 3
+  m_Size: {x: 0.053171992, y: 0.088305056, z: 0.13605002}
+  m_Center: {x: 1.7111573, y: -0.44232586, z: 0.17406519}
 --- !u!54 &8650443316241667181
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -188403,8 +188401,8 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &4949207981709715686
-MeshCollider:
+--- !u!65 &4949207981709715686
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -188421,10 +188419,9 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: d461c2f31672c224ca0c0907bb050c4f, type: 2}
+  serializedVersion: 3
+  m_Size: {x: 1.4245296, y: 1.6443462, z: 1.9072466}
+  m_Center: {x: -2.1523032, y: 1.5788136, z: 3.802209}
 --- !u!54 &8546198949737703331
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -200163,8 +200160,8 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &712515495031407325
-MeshCollider:
+--- !u!65 &712515495031407325
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -200181,10 +200178,9 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 8a623f3ef4bb4124dbf3b0fe5452449d, type: 2}
+  serializedVersion: 3
+  m_Size: {x: 0.07211721, y: 0.018830478, z: 0.07253438}
+  m_Center: {x: -1.7573125, y: 0.38686487, z: 0.9862809}
 --- !u!54 &7509296432100721594
 Rigidbody:
   m_ObjectHideFlags: 0
