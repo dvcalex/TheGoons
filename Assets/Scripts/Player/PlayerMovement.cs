@@ -132,7 +132,15 @@ public class PlayerMovement : NetworkBehaviour
     {
         get
         {
-            return IsOwner && _player != null;
+            return IsOwner && _player != null && !IsGrabbed;
+        }
+    }
+
+    public bool IsGrabbed
+    {
+        get
+        {
+            return grab != null && grab.IsHeld;
         }
     }
 
@@ -140,7 +148,12 @@ public class PlayerMovement : NetworkBehaviour
     {
         get
         {
-            return HasControl && mouseLook != null ? mouseLook.Pitch : remotePitch;
+            if (IsOwner && mouseLook != null)
+            {
+                return mouseLook.Pitch;
+            }
+
+            return remotePitch;
         }
     }
 
@@ -243,12 +256,14 @@ public class PlayerMovement : NetworkBehaviour
     private InputAction runAction;
     private InputAction jumpAction;
     private DesktopRagdoll ragdoll;
+    private PlayerGrab grab;
 
     private void Awake()
     {
         rb = rb != null ? rb : GetComponent<Rigidbody>();
         capsule = capsule != null ? capsule : GetComponent<CapsuleCollider>();
         ragdoll = GetComponent<DesktopRagdoll>();
+        grab = GetComponentInParent<PlayerGrab>();
         rb.useGravity = false;
 
         // Stable locomotion body; the attached ragdoll supplies the wobble.
@@ -278,7 +293,7 @@ public class PlayerMovement : NetworkBehaviour
         //Debug.Log("Ragdoll State: " + Player.me._ragdollManager.isRagdoll);
         anim.SetBool("Enabled", !Player.me._ragdollManager.isRagdoll);
 
-        if (!HasControl || _player._input == null || !_player._input.enabled || Player.me._ragdollManager.isRagdoll)
+        if (!HasControl || _player._input == null || !_player._input.enabled || Player.me._ragdollManager.isRagdoll || Player.me._isDead)
         {
             moveInput = Vector2.zero;
             return;
@@ -295,6 +310,12 @@ public class PlayerMovement : NetworkBehaviour
 
         moveInput = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
         crouchInput = crouchAction.IsPressed();
+
+        if (crouchAction.WasPressedThisFrame())
+        {
+            Player.me.TURDMECHANICWHATTHEFUCKKKKKKKKKHOOLYSHITTURDMECHANIC();
+        }
+
         runInput = runAction.IsPressed();
         jumpHeld = jumpAction.IsPressed();
 
@@ -343,6 +364,12 @@ public class PlayerMovement : NetworkBehaviour
         if (IsSpawned && !IsOwner)
         {
             ApplyRemotePose(1f - Mathf.Exp(-30f * Time.fixedDeltaTime));
+        }
+
+        if (IsOwner && IsGrabbed)
+        {
+            PublishPoseIfNeeded(Time.fixedDeltaTime);
+            return;
         }
 
         if (!HasControl || rb.isKinematic)
@@ -397,6 +424,11 @@ public class PlayerMovement : NetworkBehaviour
             mouseLook.SetZoom(mouseLook.defaultFOV + movementFOV + currentDashFOV);
         }
 
+        PublishPoseIfNeeded(dt);
+    }
+
+    private void PublishPoseIfNeeded(float dt)
+    {
         if (IsSpawned)
         {
             float yaw = rb.rotation.eulerAngles.y;
@@ -531,6 +563,8 @@ public class PlayerMovement : NetworkBehaviour
         Vector3 targetVelocity = dashDirection * dashSpeed;
         Vector3 velocityChange = targetVelocity - new Vector3(velocity.x, 0f, velocity.z);
         rb.AddForce(velocityChange, ForceMode.VelocityChange);
+
+        Player.me.ShakeCamera(1f, 3f, 0.1f, 0.5f);
 
         if (ragdoll != null)
         {
@@ -771,6 +805,23 @@ public class PlayerMovement : NetworkBehaviour
         isGrounded = false;
         GroundVelocity = Vector3.zero;
         Physics.SyncTransforms();
+    }
+
+    public void ClearGrabMovement()
+    {
+        moveInput = Vector2.zero;
+        walking = running = isMoving = false;
+        jumpBufferLeft = coyoteLeft = dashTimer = 0f;
+        isGrounded = false;
+        GroundVelocity = Vector3.zero;
+        currentAnimationSpeed = desiredAnimationSpeed = 0f;
+        if (anim != null)
+        {
+            anim.SetFloat("Speed", 0f);
+        }
+
+        _knockbacks.Clear();
+        servo.Reset();
     }
 
     public void SetLock(bool state)

@@ -1,5 +1,4 @@
 using UnityEngine;
-using MechLab;
 
 namespace TrollPresentation
 {
@@ -13,24 +12,24 @@ namespace TrollPresentation
         [Min(0.02f)] public float cooldownSeconds = 0.12f;
         [Min(0.01f)] public float effectScale = 0.45f;
 
-        private ServoLimb limb;
+        private VrPhysicsHand limb;
         private GameObject impact;
         private GameObject dust;
         private float nextAllowed;
 
         private void Awake()
         {
-            limb = GetComponent<ServoLimb>();
+            limb = GetComponent<VrPhysicsHand>();
         }
 
         private void OnCollisionEnter(Collision contact)
         {
-            if (!enabled || !limb || !limb.operational || contact.contactCount == 0)
+            if (!enabled || !limb || !limb.Tracked || contact.contactCount == 0)
             {
                 return;
             }
 
-            if (contact.relativeVelocity.sqrMagnitude < minimumSpeed * minimumSpeed)
+            if (contact.relativeVelocity.sqrMagnitude < Mathf.Pow(minimumSpeed * limb.WorldScale, 2f))
             {
                 return;
             }
@@ -90,14 +89,22 @@ namespace TrollPresentation
                 }
             }
 
+            float scale = 1f;
+            if (limb != null)
+            {
+                scale = limb.WorldScale;
+            }
+
             instance.SetActive(true);
             instance.transform.SetPositionAndRotation(
-                point + normal * 0.025f,
+                point + normal * 0.025f * scale,
                 Quaternion.FromToRotation(effectDirection, normal));
-            instance.transform.localScale = Vector3.one * effectScale;
+            instance.transform.localScale = Vector3.one * effectScale * scale;
 
             foreach (ParticleSystem particles in instance.GetComponentsInChildren<ParticleSystem>())
             {
+                var main = particles.main;
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
                 particles.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
                 particles.Play(false);
             }

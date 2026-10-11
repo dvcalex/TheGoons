@@ -16,7 +16,10 @@ public class PhaseMusic
 // Presentation only: observes game state, never starts/ends rounds or changes players.
 public class AudioManager : MonoBehaviour
 {
-    public static AudioManager _instance { get; private set; }
+    public static AudioManager _instance
+    {
+        get; private set;
+    }
 
     [Header("Music")]
     [SerializeField] private List<PhaseMusic> musicTracks = new();
@@ -43,11 +46,15 @@ public class AudioManager : MonoBehaviour
     {
         if (_instance != null && _instance != this)
         {
-            Destroy(this);
+            Destroy(gameObject);   // use Destroy(this) if this object holds other components
             return;
         }
 
         _instance = this;
+
+        if (transform.parent != null)
+            transform.SetParent(null);   // DDOL requires a root object
+
         DontDestroyOnLoad(gameObject);
 
         sourceA = CreateSource(musicMixerGroup, true);
@@ -58,61 +65,62 @@ public class AudioManager : MonoBehaviour
 
     private void OnEnable()
     {
+        // Force the GameObject to stay active if disabled externally
+        if (!gameObject.activeSelf)
+        {
+        
+        }
+
         if (_instance != this)
         {
             return;
         }
 
         GameManager.InstanceChanged += SubscribeToGameManager;
-        SubscribeToGameManager(GameManager._instance);
+
+        if (GameManager._instance != null)
+        {
+            SubscribeToGameManager(GameManager._instance);
+        }
     }
 
     private void OnDisable()
     {
-        GameManager.InstanceChanged -= SubscribeToGameManager;
-        UnsubscribeFromGameManager();
+        Debug.LogWarning(
+            $"[AudioManager] OnDisable | scene={gameObject.scene.name} | " +
+            $"activeSelf={gameObject.activeSelf} | activeInHierarchy={gameObject.activeInHierarchy} | " +
+            $"parent={(transform.parent ? transform.parent.name : "none")} | " +
+            $"isInstance={_instance == this}\n{Environment.StackTrace}", this);
+
+        // --- Your existing OnDisable code below ---
+        if (_instance == this)
+        {
+            GameManager.InstanceChanged -= SubscribeToGameManager;
+            UnsubscribeFromGameManager();
+        }
 
         StopCurrentTransition();
-
         if (sourceA != null)
-        {
             StopAndClear(sourceA);
-        }
-
         if (sourceB != null)
-        {
             StopAndClear(sourceB);
-        }
-
         if (cuesSource != null)
-        {
             StopAndClear(cuesSource);
-        }
     }
 
     private void OnDestroy()
     {
-        if (_instance != this)
+        if (_instance == this)
         {
-            return;
+            _instance = null;
         }
-
-        _instance = null;
 
         if (sourceA != null)
-        {
             Destroy(sourceA);
-        }
-
         if (sourceB != null)
-        {
             Destroy(sourceB);
-        }
-
         if (cuesSource != null)
-        {
             Destroy(cuesSource);
-        }
     }
 
     private AudioSource CreateSource(AudioMixerGroup mixer, bool loop)
@@ -150,7 +158,6 @@ public class AudioManager : MonoBehaviour
 
     private void UnsubscribeFromGameManager()
     {
-        // ReferenceEquals also permits cleanup after Unity has destroyed the component.
         if (ReferenceEquals(subscribedGameManager, null))
         {
             return;
@@ -164,43 +171,26 @@ public class AudioManager : MonoBehaviour
         subscribedGameManager = null;
     }
 
-    private void HandleRoundStarted()
-    {
-        PlayCue(roundStarted);
-    }
-
-    private void HandleHiderCaught(Player player)
-    {
-        PlayCue(hiderCaught);
-    }
+    private void HandleRoundStarted() => PlayCue(roundStarted);
+    private void HandleHiderCaught(Player player) => PlayCue(hiderCaught);
 
     private void HandleRoundEnded(RoundResult result)
     {
         if (result == RoundResult.HidersWin)
-        {
             PlayCue(hidersWon);
-        }
         else if (result == RoundResult.SeekerWins)
-        {
             PlayCue(seekerWon);
-        }
     }
 
     private void PlayCue(AudioClip clip)
     {
         if (clip == null)
-        {
             return;
-        }
-
         cuesSource.volume = 1f;
         cuesSource.PlayOneShot(clip, cuesVolume);
     }
 
-    private void HandlePhaseChanged(GamePhase phase)
-    {
-        HandlePhaseChanged(phase, false);
-    }
+    private void HandlePhaseChanged(GamePhase phase) => HandlePhaseChanged(phase, false);
 
     private void HandlePhaseChanged(GamePhase phase, bool silence)
     {
@@ -224,7 +214,6 @@ public class AudioManager : MonoBehaviour
 
         if (track != null)
         {
-            // Reuse an already playing track when reversing an interrupted crossfade.
             if (sourceA.isPlaying && sourceA.clip == track)
             {
                 target = sourceA;
@@ -242,17 +231,13 @@ public class AudioManager : MonoBehaviour
             }
         }
 
-        // An unassigned track means silence; missing optional audio is not a gameplay error.
         transitionRoutine = StartCoroutine(FadeTo(target));
     }
 
     private void StopCurrentTransition()
     {
         if (transitionRoutine == null)
-        {
             return;
-        }
-
         StopCoroutine(transitionRoutine);
         transitionRoutine = null;
     }
@@ -283,14 +268,9 @@ public class AudioManager : MonoBehaviour
         sourceB.volume = endB;
 
         if (target != sourceA)
-        {
             StopAndClear(sourceA);
-        }
-
         if (target != sourceB)
-        {
             StopAndClear(sourceB);
-        }
 
         transitionRoutine = null;
     }

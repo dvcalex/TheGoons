@@ -9,6 +9,7 @@ namespace MechLab
     {
         public ServoLimb limb;
         public ConfigurableJoint shoulderJoint;
+        public Rigidbody physicalHead;
         [Tooltip("Authored shoulder position relative to the tracking floor, in metres.")]
         public Vector3 shoulderFromFloor;
         [Min(.1f)]
@@ -49,6 +50,12 @@ namespace MechLab
             }
 
             Vector3 desired = limb.input.trackingSpace.TransformPoint(shoulderFromFloor + limb.input.HeadTranslation);
+            if (physicalHead != null)
+            {
+                Vector3 shoulderOffset = shoulderFromFloor - limb.input.referenceHeadPosition;
+                desired = physicalHead.position + limb.input.trackingSpace.rotation * shoulderOffset;
+            }
+
             Vector3 current = limb.chassis.transform.TransformPoint(shoulderJoint.connectedAnchor);
             Vector3 next = Vector3.MoveTowards(current, desired, maximumRootSpeed * Mathf.Max(0f, deltaTime));
             // Do not move the tracking floor or camera: that would feed head motion back twice.

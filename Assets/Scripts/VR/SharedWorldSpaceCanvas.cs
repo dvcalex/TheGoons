@@ -41,6 +41,11 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
     private bool originalScalerEnabled;
     private bool originalRaycasterEnabled;
     private float originalScaleFactor;
+    private CanvasGroup visibilityGroup;
+    private float originalAlpha;
+    private bool originalInteractable;
+    private bool originalBlocksRaycasts;
+    private bool addedVisibilityGroup;
 
     public void Present(Camera viewer)
     {
@@ -52,6 +57,16 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
         if (!IsWorldSpace)
         {
             canvas = GetComponent<Canvas>();
+            visibilityGroup = GetComponent<CanvasGroup>();
+            addedVisibilityGroup = visibilityGroup == null;
+            if (addedVisibilityGroup)
+            {
+                visibilityGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            originalAlpha = visibilityGroup.alpha;
+            originalInteractable = visibilityGroup.interactable;
+            originalBlocksRaycasts = visibilityGroup.blocksRaycasts;
             rect = (RectTransform)transform;
             scaler = GetComponent<CanvasScaler>();
             originalMode = canvas.renderMode;
@@ -110,11 +125,39 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
             forward = Vector3.forward;
         }
 
+        float viewerScale = Mathf.Abs(Viewer.transform.lossyScale.x);
+        float panelScale = widthMetres * viewerScale / Mathf.Max(1f, referenceResolution.x);
+        rect.localScale = Vector3.one * panelScale;
+        raycaster.maxDistance = 10f * viewerScale;
+
         forward.Normalize();
         rect.SetPositionAndRotation(
-            Viewer.transform.position + forward * distanceMetres + Vector3.up * heightOffset,
+            Viewer.transform.position + (forward * distanceMetres + Vector3.up * heightOffset) * viewerScale,
             Quaternion.LookRotation(forward, Vector3.up)
         );
+    }
+
+    public void SetVisible(bool visible)
+    {
+        if (!IsWorldSpace || visibilityGroup == null)
+        {
+            return;
+        }
+
+        if (visible)
+        {
+            visibilityGroup.alpha = originalAlpha;
+            visibilityGroup.interactable = originalInteractable;
+            visibilityGroup.blocksRaycasts = originalBlocksRaycasts;
+            raycaster.enabled = true;
+        }
+        else
+        {
+            visibilityGroup.alpha = 0f;
+            visibilityGroup.interactable = false;
+            visibilityGroup.blocksRaycasts = false;
+            raycaster.enabled = false;
+        }
     }
 
     public void RestoreDesktop()
@@ -122,6 +165,12 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
         if (!IsWorldSpace || canvas == null)
         {
             return;
+        }
+
+        SetVisible(true);
+        if (addedVisibilityGroup)
+        {
+            Destroy(visibilityGroup);
         }
 
         IsWorldSpace = false;

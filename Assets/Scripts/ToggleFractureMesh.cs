@@ -4,6 +4,11 @@ using UnityEngine;
 public class ToggleFractureMesh : NetworkBehaviour
 {
     public GameObject fracturedObject;
+
+    [Min(0f)]
+    [Tooltip("Minimum collision impulse from the Destructive layer needed to break this object. Lower values make it easier to break.")]
+    public float minimumImpactImpulse = 0.1f;
+
     private MeshRenderer[] fo_renderers;
     private MeshRenderer self_renderer;
 
@@ -39,7 +44,7 @@ public class ToggleFractureMesh : NetworkBehaviour
         if (collision.gameObject.layer == LayerMask.NameToLayer("Broken"))
             return;
         Debug.Log("HIT!!");
-        if (collision.impulse.magnitude < 1f)
+        if (collision.impulse.magnitude < minimumImpactImpulse)
             return;
 
         SetFracturedRenderers_RPC(true);

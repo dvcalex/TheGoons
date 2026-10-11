@@ -12,6 +12,8 @@ namespace MechLab
         public Transform trackingFloor;
         public PilotPoseStream leftHand;
         public PilotPoseStream rightHand;
+        public TrackedHeadMotor physicalHead;
+        public ThumbstickSlewMotor slew;
         public ImpactResponseSolver[] impacts;
         [Tooltip("Raised once for each resolved strike. The value is proposed damage; connect your effects here.")]
         public UnityEvent<float> onStrike = new UnityEvent<float>();

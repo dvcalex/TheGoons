@@ -34,6 +34,8 @@ namespace MechLab
         public float rotationDampingRatio = 1f;
         public float maximumServoForce = 3500f;
         public float maximumServoTorque = 800f;
+        [Tooltip("Use mass-aware acceleration drives and scale motor force limits with the arm's actual load.")]
+        public bool responsiveArmDrives;
         [Range(0f, 1f)]
         public float armGravitySupport = 1f;
         public float maximumArmSpeed = 12f;

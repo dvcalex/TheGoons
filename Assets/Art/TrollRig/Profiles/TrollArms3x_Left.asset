@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: TrollArms3x_Left
   m_EditorClassIdentifier: 
   stepSeconds: 0.011111111
-  solverPasses: 16
-  velocityPasses: 6
+  solverPasses: 24
+  velocityPasses: 8
   lostPoseGrace: 0.1
   trackingJumpDistance: 0.45
   reacquireSeconds: 0.2
@@ -38,6 +38,7 @@ MonoBehaviour:
   rotationDampingRatio: 1
   maximumServoForce: 10500
   maximumServoTorque: 7200
+  responsiveArmDrives: 1
   armGravitySupport: 1
   maximumArmSpeed: 36
   maximumArmSpin: 25
