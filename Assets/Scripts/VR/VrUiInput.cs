@@ -181,7 +181,13 @@ public sealed class VrUiInput : MonoBehaviour
     {
         for (int i = 0; i < rays.Length; i++)
         {
-            var line = new GameObject(i == 0 ? "Left UI ray" : "Right UI ray");
+            string side = "Right";
+            if (i == 0)
+            {
+                side = "Left";
+            }
+
+            var line = new GameObject(side + " UI ray");
             line.transform.SetParent(transform, false);
             rays[i] = line.AddComponent<LineRenderer>();
             rays[i].sharedMaterial = pointerMaterial;
@@ -193,7 +199,7 @@ public sealed class VrUiInput : MonoBehaviour
             rays[i].receiveShadows = false;
             rays[i].enabled = false;
             var dot = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            dot.name = i == 0 ? "Left UI cursor" : "Right UI cursor";
+            dot.name = side + " UI cursor";
             dot.transform.SetParent(transform, false);
             dot.transform.localScale = Vector3.one * 0.012f;
             var collider = dot.GetComponent<Collider>();
@@ -228,7 +234,7 @@ public sealed class VrUiInput : MonoBehaviour
             && controller.isTracked.isPressed
             && position != null
             && rotation != null;
-        rays[index].enabled = valid;
+        rays[index].enabled = false;
         dots[index].gameObject.SetActive(false);
         if (!valid)
         {
@@ -242,7 +248,6 @@ public sealed class VrUiInput : MonoBehaviour
         pointer.trackedDeviceOrientation = orientation;
         hits.Clear();
         eventSystem.RaycastAll(pointer, hits);
-        Vector3 end = start + orientation * Vector3.forward * 3;
         foreach (var hit in hits)
         {
             if (!(hit.module is TrackedDeviceRaycaster))
@@ -250,14 +255,15 @@ public sealed class VrUiInput : MonoBehaviour
                 continue;
             }
 
-            end = hit.worldPosition;
+            Vector3 end = hit.worldPosition;
+            rays[index].SetPosition(0, start);
+            rays[index].SetPosition(1, end);
+            rays[index].enabled = true;
             dots[index].position = end - orientation * Vector3.forward * 0.005f;
             dots[index].gameObject.SetActive(true);
             break;
         }
 
-        rays[index].SetPosition(0, start);
-        rays[index].SetPosition(1, end);
     }
 
     private void OnDisable()
