@@ -7,7 +7,10 @@ using Unity.Services.Authentication;
 using Unity.Services.Relay;
 using Unity.Netcode.Transports.UTP;
 using Unity.Services.Relay.Models;
-using WebSocketSharp;
+using System;
+using System.Diagnostics;
+using System.Threading;
+using Debug = UnityEngine.Debug;
 
 public class RelayManager : MonoBehaviour
 {
@@ -24,9 +27,12 @@ public class RelayManager : MonoBehaviour
     private bool startingHost;
     private bool startingClient;
     private SharedGameSession session;
+    private TMP_Text connectingStatus;
+    private const int ServiceTimeoutSeconds = 30;
 
     private void Awake()
     {
+        connectingStatus = screen_Connecting.GetComponentInChildren<TMP_Text>(true);
         session = GetComponent<SharedGameSession>();
         if (session == null)
         {
@@ -59,7 +65,7 @@ public class RelayManager : MonoBehaviour
     public async Task Client()
     {
         var manager = NetworkManager.Singleton;
-        if (startingClient || manager.IsListening)
+        if (startingClient || startingHost || manager.IsListening)
         {
             return;
         }
@@ -69,6 +75,7 @@ public class RelayManager : MonoBehaviour
         lobbyCode = lobbyCodeInput.text.Trim().ToUpperInvariant();
         screen_JoinHost.SetActive(false);
         screen_Connecting.SetActive(true);
+        ReportProgress("Starting client");
         try
         {
             bool started = enableOnline ? await StartClientWithRelay(lobbyCode, CONNECTIONTYPE) : manager.StartClient();
@@ -78,6 +85,7 @@ public class RelayManager : MonoBehaviour
             }
 
             float deadline = Time.realtimeSinceStartup + 30f;
+            ReportProgress("Waiting for host connection");
             while (!manager.IsConnectedClient && manager.IsListening && Time.realtimeSinceStartup < deadline)
             {
                 await Task.Delay(100);
@@ -89,10 +97,12 @@ public class RelayManager : MonoBehaviour
             }
 
             lobbyCodeDisplay.text = lobbyCode;
+            Debug.Log("[Connection] Client connected successfully.");
             all.SetActive(false);
         }
         catch (System.Exception exception)
         {
+            Debug.LogError($"[Connection] Client startup failed: {exception}");
             if (manager.IsListening)
             {
                 manager.Shutdown();
@@ -115,7 +125,7 @@ public class RelayManager : MonoBehaviour
 
     public async Task Host()
     {
-        if (startingHost || NetworkManager.Singleton.IsListening)
+        if (startingHost || startingClient || NetworkManager.Singleton.IsListening)
         {
             return;
         }
@@ -124,6 +134,7 @@ public class RelayManager : MonoBehaviour
         errorDisplay.text = "";
         screen_JoinHost.SetActive(false);
         screen_Connecting.SetActive(true);
+        ReportProgress("Starting host");
         try
         {
             if (!enableOnline)
@@ -145,7 +156,9 @@ public class RelayManager : MonoBehaviour
                 GUIUtility.systemCopyBuffer = code;
             }
 
+            ReportProgress("Loading gameplay scene");
             session.LoadGame();
+            Debug.Log("[Connection] Host started; gameplay scene load requested.");
             all.SetActive(false);
         }
         catch (System.Exception exception)
@@ -155,8 +168,8 @@ public class RelayManager : MonoBehaviour
                 NetworkManager.Singleton.Shutdown();
             }
 
-            errorDisplay.text = "Failed to start host. Please try again.";
-            Debug.LogWarning($"Host startup failed: {exception.Message}");
+            errorDisplay.text = exception.Message;
+            Debug.LogError($"[Connection] Host startup failed: {exception}");
             screen_Connecting.SetActive(false);
             screen_JoinHost.SetActive(true);
         }
@@ -170,46 +183,101 @@ public class RelayManager : MonoBehaviour
 
     public async Task<string> StartHostWithRelay(int maxConnections, string connectionType)
     {
-        await UnityServices.InitializeAsync();
-        if (!AuthenticationService.Instance.IsSignedIn)
-        {
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        }
+        await InitializeOnlineServices();
 
-        var allocation = await RelayService.Instance.CreateAllocationAsync(maxConnections);
+        var allocation = await RunServiceStep("Creating Relay allocation",
+            () => RelayService.Instance.CreateAllocationAsync(maxConnections));
         NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(
             AllocationUtils.ToRelayServerData(allocation, connectionType)
         );
-        var joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+        var joinCode = await RunServiceStep("Retrieving join code",
+            () => RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId));
+        ReportProgress("Starting network host");
         return NetworkManager.Singleton.StartHost() ? joinCode : null;
     }
 
     public async Task<bool> StartClientWithRelay(string joinCode, string connectionType)
     {
-        if (joinCode.IsNullOrEmpty())
+        if (string.IsNullOrWhiteSpace(joinCode))
         {
-            errorDisplay.text = "Join code is empty.";
-            return false;
+            throw new ArgumentException("Enter a join code first.");
         }
 
+        await InitializeOnlineServices();
+        var allocation = await RunServiceStep("Joining Relay allocation",
+            () => RelayService.Instance.JoinAllocationAsync(joinCode: joinCode));
+        NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(
+            AllocationUtils.ToRelayServerData(allocation, connectionType)
+        );
+        ReportProgress("Starting network client");
+        return NetworkManager.Singleton.StartClient();
+    }
+
+    private async Task InitializeOnlineServices()
+    {
+        Debug.Log($"[Connection] Platform={Application.platform}, reachability={Application.internetReachability}, protocol={CONNECTIONTYPE}");
+        await RunServiceStep("Initializing Unity Services", () => UnityServices.InitializeAsync());
+        if (!AuthenticationService.Instance.IsSignedIn)
+        {
+            await RunServiceStep("Signing in to Unity Services",
+                () => AuthenticationService.Instance.SignInAnonymouslyAsync());
+        }
+    }
+
+    private Task RunServiceStep(string description, Func<Task> operation)
+    {
+        return RunServiceStep(description, async () =>
+        {
+            await operation();
+            return true;
+        });
+    }
+
+    private async Task<T> RunServiceStep<T>(string description, Func<Task<T>> operation)
+    {
+        ReportProgress(description);
+        var timer = Stopwatch.StartNew();
         try
         {
-            await UnityServices.InitializeAsync();
-            if (!AuthenticationService.Instance.IsSignedIn)
+            Task<T> request = operation();
+            using (var timeoutCancellation = new CancellationTokenSource())
             {
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-            }
+                Task timeout = Task.Delay(TimeSpan.FromSeconds(ServiceTimeoutSeconds), timeoutCancellation.Token);
+                if (await Task.WhenAny(request, timeout) != request)
+                {
+                    // Service requests cannot be cancelled. Observe a late failure, but never
+                    // continue network startup after the user has already seen a timeout.
+                    _ = request.ContinueWith(completed =>
+                    {
+                        _ = completed.Exception;
+                    }, TaskContinuationOptions.OnlyOnFaulted);
+                    throw new TimeoutException($"{description} timed out after {ServiceTimeoutSeconds}s. Check the headset's internet connection and try again.");
+                }
 
-            var allocation = await RelayService.Instance.JoinAllocationAsync(joinCode: joinCode);
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(
-                AllocationUtils.ToRelayServerData(allocation, connectionType)
-            );
-            return !string.IsNullOrEmpty(joinCode) && NetworkManager.Singleton.StartClient();
+                timeoutCancellation.Cancel();
+                T result = await request;
+                Debug.Log($"[Connection] {description} completed in {timer.Elapsed.TotalSeconds:F1}s.");
+                return result;
+            }
         }
-        catch
+        catch (TimeoutException)
         {
-            return false;
+            throw;
         }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException($"{description} failed: {exception.Message}", exception);
+        }
+    }
+
+    private void ReportProgress(string description)
+    {
+        if (connectingStatus != null)
+        {
+            connectingStatus.text = description + "...";
+        }
+
+        Debug.Log($"[Connection] {description}.");
     }
     #endregion
 }

@@ -20,6 +20,14 @@ StartupScene has RelayManager's **Enable Online** enabled. Both devices need int
 
 Desktop players retain screen-space UI, mouse input, name entry, and the Join/code-entry flow. The server spawns Host_Player for the host and DesktopPlayer for joining clients once GameplayScene is loaded, then removes the connection placeholder. Initial positions are separated; dedicated scene spawn points can be added later.
 
+## Connection troubleshooting
+
+The connecting panel names each step: initializing Unity Services, signing in, creating or joining a Relay allocation, and retrieving the host join code. Each service request has a 30-second timeout. A failed request returns to the menu with the step and error; logs prefixed `[Connection]` include progress, elapsed times, and full exception details. Desktop clients also have a separate 30-second wait for the host connection after Relay setup.
+
+For Quest diagnostics, rebuild and install after changing the scripts. Start `adb logcat -v time Unity:I AndroidRuntime:E '*:S'` before pressing Host. Use the bundled Android SDK's `platform-tools/adb.exe` if adb is not on PATH. Include the last `[Connection]` lines and the panel error when reporting a failure. Service initialization/sign-in/allocation failures occur before the gameplay transport starts; changing the transport protocol alone cannot diagnose those failures.
+
+The online code calls `SetRelayServerData`, which selects Relay Unity Transport at runtime. Both host and client use DTLS. The generated Android manifest must include `android.permission.INTERNET`; the current generated build does. The build-time `adb shell setprop debug.checkjni 0` command sets a device debugging property and is separate from Relay authentication or allocation.
+
 ## Editing and reuse
 
 - **Canvas / SharedWorldSpaceCanvas:** reference layout 1920 x 1080; panel width 1.6 m; distance 1.5 m; height offset -0.1 m. Existing button bindings and layout children are preserved.
