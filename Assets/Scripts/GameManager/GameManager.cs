@@ -328,11 +328,17 @@ public class GameManager : NetworkBehaviour
     // START GAME
     // ==========================================
 
-    // Compatibility with your original method name.
-    // Only the server can start the round.
+    // Clients send a request to the server. Only the server/host may start rounds.
     public void StartGame_RPC()
     {
-        if (!CanControlRound())
+        if (IsSpawned)
+            RequestStartGameRpc();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void RequestStartGameRpc(RpcParams rpcParams = default)
+    {
+        if (!IsAuthorizedRoundController(rpcParams.Receive.SenderClientId))
             return;
 
         StartGameInternal();
@@ -426,56 +432,34 @@ public class GameManager : NetworkBehaviour
     // HIDER DEATH
     // ==========================================
 
-    // Keep the original public method for other scripts.
-    //
-    // Host: processes directly.
-    // Client: sends a request to the server.
+    // Actual network RPC: clients report their own death to the server.
+    // Server-initiated eliminations can report any hider.
     public void OnHiderDeath_RPC(ulong playerObjId)
     {
-        if (!IsSpawned)
-            return;
-
-        if (IsServer)
-        {
-            RemoveHider(playerObjId, true);
-        }
-        else
-        {
+        if (IsSpawned)
             ReportHiderDeathRpc(playerObjId);
-        }
     }
 
-    [Rpc(
-        SendTo.Server,
-        InvokePermission = RpcInvokePermission.Everyone
-    )]
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void ReportHiderDeathRpc(
         ulong playerObjId,
         RpcParams rpcParams = default)
     {
-        if (!IsServer || !timerIsRunning)
+        if (!IsServer || !timerIsRunning ||
+            !remainingHiders.Contains(playerObjId))
             return;
 
-        if (!remainingHiders.Contains(playerObjId))
-            return;
-
-        // Validate the client reporting the death.
         if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(
-            playerObjId,
-            out NetworkObject playerObject))
-        {
+            playerObjId, out NetworkObject playerObject))
             return;
-        }
 
         ulong senderId = rpcParams.Receive.SenderClientId;
 
-        if (playerObject.OwnerClientId != senderId)
+        // A client may report only its own character; the server can report anyone.
+        if (senderId != NetworkManager.ServerClientId &&
+            playerObject.OwnerClientId != senderId)
         {
-            Debug.LogWarning(
-                $"Client {senderId} attempted to report " +
-                $"another player's death."
-            );
-
+            Debug.LogWarning($"Client {senderId} tried to eliminate player {playerObjId} without authority.");
             return;
         }
 
@@ -608,11 +592,18 @@ public class GameManager : NetworkBehaviour
     // END GAME
     // ==========================================
 
-    // Preserves your original method name.
-    // Intended for server-side calls.
+    // Network request for an end-of-round check. Only host/server may initiate it.
     public void OnEndGame_RPC()
     {
-        if (!CanControlRound() || !timerIsRunning)
+        if (IsSpawned)
+            RequestEndGameRpc();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void RequestEndGameRpc(RpcParams rpcParams = default)
+    {
+        if (!IsAuthorizedRoundController(rpcParams.Receive.SenderClientId) ||
+            !timerIsRunning)
             return;
 
         RoundResult result = remainingHiders.Count > 0
@@ -659,7 +650,22 @@ public class GameManager : NetworkBehaviour
 
     public void ReturnToLobby()
     {
-        if (!CanControlRound())
+        if (!IsSpawned)
+            return;
+
+        ReturnToLobby_RPC();
+    }
+
+    public void ReturnToLobby_RPC()
+    {
+        if (IsSpawned)
+            RequestReturnToLobbyRpc();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void RequestReturnToLobbyRpc(RpcParams rpcParams = default)
+    {
+        if (!IsAuthorizedRoundController(rpcParams.Receive.SenderClientId))
             return;
 
         ReturnToLobbyInternal();
@@ -838,6 +844,12 @@ public class GameManager : NetworkBehaviour
     // ==========================================
     // UTILITIES
     // ==========================================
+
+    private bool IsAuthorizedRoundController(ulong senderClientId)
+    {
+        // Round management is restricted to server/host requests.
+        return CanControlRound() && senderClientId == NetworkManager.ServerClientId;
+    }
 
     private bool CanControlRound()
     {

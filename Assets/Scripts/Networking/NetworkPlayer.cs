@@ -48,6 +48,8 @@ public class NetworkPlayer : NetworkBehaviour
             }
         }
 
+        yield return new WaitUntil(() => PlayerSpawn._instance != null);
+
         NetworkObject player = NetworkManager.SpawnManager.InstantiateAndSpawn(
             prefab,
             OwnerClientId,
