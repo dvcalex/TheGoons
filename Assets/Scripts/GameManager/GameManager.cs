@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 
 public enum GamePhase
@@ -18,7 +19,7 @@ public enum RoundResult
     Cancelled
 }
 
-public class GameManager : MonoBehaviour
+public class GameManager : NetworkBehaviour
 {
     public static GameManager _instance
     {
@@ -156,6 +157,17 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        if (!IsServer)
+            return;
+
+        if (Player.me == null)
+            return;
+
+        if (Player.me._input.actions["StartGame"].WasPressedThisFrame())
+        {
+            StartGame_RPC();
+        }
+
         if (!timerIsRunning || !CanControlRound())
         {
             return;
@@ -171,11 +183,12 @@ public class GameManager : MonoBehaviour
 
         if (HidersCount == 0 || timeRemaining == 0f)
         {
-            EndGame();
+            OnEndGame_RPC();
         }
     }
 
-    public void StartGame()
+    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
+    public void StartGame_RPC()
     {
         if (!isDebugging && (CurrentPhase != GamePhase.Lobby || !CanControlRound()))
         {
@@ -218,8 +231,12 @@ public class GameManager : MonoBehaviour
         debugResult = Result;
     }
 
-    public void OnHiderDeath(Player hider)
+    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
+    public void OnHiderDeath_RPC(ulong playerObjId)
     {
+        Player hider = null;
+        hider = NetworkManager.SpawnManager.SpawnedObjects[playerObjId].GetComponent<Player>();
+
         if (!timerIsRunning || !CanControlRound() || hider == null || !remainingHiders.Remove(hider))
         {
             return;
@@ -229,13 +246,14 @@ public class GameManager : MonoBehaviour
         HiderCaught?.Invoke(hider);
         UpdateUI();
 
-        if (HidersCount == 0)
+        if (HidersCount == 0 && IsServer)
         {
-            EndGame();
+            OnEndGame_RPC();
         }
     }
 
-    public void EndGame()
+    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
+    public void OnEndGame_RPC()
     {
         if (HidersCount > 0)
         {

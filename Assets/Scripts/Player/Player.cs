@@ -31,7 +31,7 @@ public class Player : NetworkBehaviour
 
     [Space]
     public GameObject[] onDeathObjs;
-    public GameObject[] spectatorObjs;
+    public GameObject spectatorObj;
 
     [Header("Invisibility Ability")]
     public float invisDuration = 5f; // Set this to 5 seconds
@@ -88,6 +88,8 @@ public class Player : NetworkBehaviour
         {
             vignette.intensity.overrideState = true;
         }
+
+        spectatorObj.SetActive(false);
     }
 
     public void InitOther()
@@ -106,6 +108,8 @@ public class Player : NetworkBehaviour
         {
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         }
+
+        spectatorObj.SetActive(false);
     }
 
     public override void OnNetworkPreDespawn()
@@ -177,6 +181,9 @@ public class Player : NetworkBehaviour
                 _ragdollManager.SetRagdoll(!_ragdollManager.isRagdoll);
             }
 
+            if (Keyboard.current.fKey.wasPressedThisFrame)
+                Damage(34f);
+
             // Check input for Invisibility ability
             if (_input.actions["InvisAbility"] != null && _input.actions["InvisAbility"].WasPressedThisFrame())
             {
@@ -196,6 +203,8 @@ public class Player : NetworkBehaviour
         isInvisible = true;
         invisActiveTimer = invisDuration;
         SetInvisibility(true);
+
+        ShakeCamera(1f, 3f, 0.1f, 0.5f);
 
         // ---> GRAY OUT UI ICON WHILE ACTIVE <---
         if (_logic != null)
@@ -224,7 +233,10 @@ public class Player : NetworkBehaviour
     public void TURDMECHANICWHATTHEFUCKKKKKKKKKHOOLYSHITTURDMECHANIC()
     {
         if (Random.Range(0f, 1f) < 0.05f)
+        {
+            ShakeCamera(1f, 3f, 0.1f, 0.5f);
             FuckingPoop_RPC();
+        }
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
@@ -240,7 +252,9 @@ public class Player : NetworkBehaviour
     public void Damage_RPC(float damage)
     {
         health.Value -= damage;
-        SetVignette(1f - (Mathf.Clamp(health.Value, 0f, 100f) / 100f));
+        SetVignette(Mathf.Clamp(health.Value, 0f, 100f) / 100f);
+
+        ShakeCamera(1f, 3f, 0.1f, 0.5f);
 
         if (health.Value <= 0f)
             SetDeathState_RPC(true);
@@ -263,10 +277,19 @@ public class Player : NetworkBehaviour
     [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Owner)]
     public void SetDeathState_RPC(bool state)
     {
+        if (IsOwner)
+        {
+            GameManager._instance.OnHiderDeath_RPC(NetworkObjectId);
+        }
+       
+        Debug.Log("DEATH");
         // Player has died
 
-        foreach (GameObject obj in spectatorObjs)
-            obj.SetActive(state);
+        spectatorObj.SetActive(state);
+        spectatorObj.transform.position = _movement.transform.position;
+
+        //foreach (GameObject obj in spectatorObjs)
+        //    obj.SetActive(state);
 
         foreach (GameObject obj in onDeathObjs)
             obj.SetActive(!state);
