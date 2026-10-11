@@ -64,7 +64,7 @@ public class PlayerRigData : MonoBehaviour
         if(_currentLerpData != null)
         {
             SetRigidbodyStates(false);
-            LerpToRig(_currentLerpData, Time.deltaTime * 15f);
+            LerpToRig(_currentLerpData, Time.deltaTime * 3f);
         }
     }
 }
