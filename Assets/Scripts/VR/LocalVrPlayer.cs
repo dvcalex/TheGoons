@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>Local tracking plus replicated world-space poses for the VR host.</summary>
 public sealed class LocalVrPlayer : NetworkBehaviour
@@ -84,6 +85,11 @@ public sealed class LocalVrPlayer : NetworkBehaviour
         {
             trollRig.SetActive(true);
             rig.BindTracking(origin.CameraFloorOffsetObject.transform);
+            VrSpawnPoint spawn = VrSpawnPoint.FindInScene(SceneManager.GetSceneByName(SharedGameSession.GameScene));
+            if (spawn != null)
+            {
+                rig.Relocate(spawn.transform);
+            }
         }
         else
         {

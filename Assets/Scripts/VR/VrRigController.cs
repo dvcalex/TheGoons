@@ -47,6 +47,7 @@ public sealed class VrRigController : MonoBehaviour
     } = Quaternion.identity;
 
     private Transform trackingSpace;
+    private Quaternion trackingRotation = Quaternion.identity;
     private bool headTracked;
     private bool travelArmed;
     private bool paused;
@@ -61,6 +62,37 @@ public sealed class VrRigController : MonoBehaviour
     public void BindTracking(Transform space)
     {
         trackingSpace = space;
+    }
+
+    public void Relocate(Transform spawn)
+    {
+        FollowChassis(chassis.position);
+
+        Vector3 oldFloor = trackingFloor.position;
+        Quaternion rotation = Quaternion.Euler(0f, spawn.eulerAngles.y, 0f);
+        Quaternion turn = rotation * Quaternion.Inverse(trackingRotation);
+
+        // Move every physical part together so the motors do not drag them
+        // across the map, and discard motion from the previous location.
+        foreach (Rigidbody body in GetComponentsInChildren<Rigidbody>(true))
+        {
+            body.position = spawn.position + turn * (body.position - oldFloor);
+            body.rotation = turn * body.rotation;
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+        }
+
+        trackingRotation = rotation;
+        FollowChassis(chassis.position);
+        headMotor.Reset();
+        leftHand.motor.Reset();
+        rightHand.motor.Reset();
+        leftHand.SetTarget(Vector3.zero, Quaternion.identity, 0f, false);
+        rightHand.SetTarget(Vector3.zero, Quaternion.identity, 0f, false);
+        headTracked = false;
+        headAuthority = 0f;
+        travelArmed = false;
+        Physics.SyncTransforms();
     }
 
     private void Awake()
@@ -196,7 +228,7 @@ public sealed class VrRigController : MonoBehaviour
 
     private void FollowChassis(Vector3 position)
     {
-        trackingFloor.SetPositionAndRotation(position + floorOffset * WorldScale, Quaternion.identity);
+        trackingFloor.SetPositionAndRotation(position + trackingRotation * floorOffset * WorldScale, trackingRotation);
     }
 
     public Vector3 ShoulderPosition(float side)
