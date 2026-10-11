@@ -10,14 +10,21 @@ namespace MechLab
         public MechRig rig;
         [Tooltip("Common tracking-space parent of the camera/controllers (usually Camera Offset). Keep unit scale.")]
         public Transform trackingSpace;
-        public Transform head, leftController, rightController;
+        public Transform head;
+        public Transform leftController;
+        public Transform rightController;
         [Tooltip("Read grip/tracking flags from Unity XR. Disable when your own input adapter calls FeedPoses.")]
         public bool readDeviceInput = true;
-        private bool focused = true, paused;
+        private bool focused = true;
+        private bool paused;
 
         private void Update()
         {
-            if (!readDeviceInput || !rig || !trackingSpace || !head || !leftController || !rightController) return;
+            if (!readDeviceInput || !rig || !trackingSpace || !head || !leftController || !rightController)
+            {
+                return;
+            }
+
             var h = InputDevices.GetDeviceAtXRNode(XRNode.CenterEye);
             var l = InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);
             var r = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
@@ -27,12 +34,18 @@ namespace MechLab
             FeedPoses(lg, rg, Valid(h) && present, Valid(l), Valid(r));
         }
 
-        private static bool Valid(InputDevice device) => device.isValid
-            && device.TryGetFeatureValue(CommonUsages.isTracked, out bool tracked) && tracked;
+        private static bool Valid(InputDevice device)
+        {
+            return device.isValid && device.TryGetFeatureValue(CommonUsages.isTracked, out bool tracked) && tracked;
+        }
 
         public void FeedPoses(float leftGrip, float rightGrip, bool headValid, bool leftValid, bool rightValid)
         {
-            if (!rig || !trackingSpace || !head || !leftController || !rightController) return;
+            if (!rig || !trackingSpace || !head || !leftController || !rightController)
+            {
+                return;
+            }
+
             rig.UseExternalInput(true);
             headValid &= focused && !paused;
             Feed(rig.leftHand, leftController, leftGrip, headValid, leftValid);
@@ -45,20 +58,59 @@ namespace MechLab
             input.trackingOffset = Vector3.zero;
             double now = Time.unscaledTimeAsDouble;
             input.FeedHead(now, trackingSpace.InverseTransformPoint(head.position), headValid);
-            input.Feed(now, trackingSpace.InverseTransformPoint(controller.position),
-                Quaternion.Inverse(trackingSpace.rotation) * controller.rotation, grip, headValid && handValid);
+            input.Feed(
+                now,
+                trackingSpace.InverseTransformPoint(controller.position),
+                Quaternion.Inverse(trackingSpace.rotation) * controller.rotation,
+                grip,
+                headValid && handValid
+            );
         }
 
         private void Invalidate()
         {
-            if (!rig) return;
-            foreach (var input in new[] { rig.leftHand, rig.rightHand }) if (input && input.useScriptedInput) {
-                input.FeedHead(Time.unscaledTimeAsDouble, Vector3.zero, false);
-                input.Feed(Time.unscaledTimeAsDouble, Vector3.zero, Quaternion.identity, 0f, false);
+            if (!rig)
+            {
+                return;
+            }
+
+            foreach (var input in new[]
+            {
+                rig.leftHand,
+                rig.rightHand
+            }
+
+            )
+            {
+                if (input && input.useScriptedInput)
+                {
+                    input.FeedHead(Time.unscaledTimeAsDouble, Vector3.zero, false);
+                    input.Feed(Time.unscaledTimeAsDouble, Vector3.zero, Quaternion.identity, 0f, false);
+                }
             }
         }
-        private void OnApplicationFocus(bool value) { focused = value; if (!value) Invalidate(); }
-        private void OnApplicationPause(bool value) { paused = value; if (value) Invalidate(); }
-        private void OnDisable() => Invalidate();
+
+        private void OnApplicationFocus(bool value)
+        {
+            focused = value;
+            if (!value)
+            {
+                Invalidate();
+            }
+        }
+
+        private void OnApplicationPause(bool value)
+        {
+            paused = value;
+            if (value)
+            {
+                Invalidate();
+            }
+        }
+
+        private void OnDisable()
+        {
+            Invalidate();
+        }
     }
 }

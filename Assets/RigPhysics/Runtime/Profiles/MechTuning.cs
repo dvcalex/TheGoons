@@ -21,7 +21,6 @@ namespace MechLab
         public float handPositionScale = 1.5f;
         public Vector3 trackingPivot = new Vector3(0f, 1.4f, 0f);
         public Vector3 shoulderFromFloor = new Vector3(0.55f, 1.45f, 0f);
-
         [Header("Physical arm")]
         public float limbReach = 1.3f;
         public float wristMass = 8f;
@@ -35,7 +34,8 @@ namespace MechLab
         public float rotationDampingRatio = 1f;
         public float maximumServoForce = 3500f;
         public float maximumServoTorque = 800f;
-        [Range(0f, 1f)] public float armGravitySupport = 1f;
+        [Range(0f, 1f)]
+        public float armGravitySupport = 1f;
         public float maximumArmSpeed = 12f;
         public float maximumArmSpin = 25f;
         public float armLinearDrag = 0.1f;
@@ -47,7 +47,6 @@ namespace MechLab
         public float shoulderAngleLimit = 90f;
         public float elbowAngleLimit = 135f;
         public float wristAngleLimit = 80f;
-
         [Header("Chassis")]
         [Tooltip("Hold the pilot chassis orientation against arm/contact torque. Explicit cockpit turns still work. Disable for free-body experiments.")]
         public bool lockBodyRotation = true;
@@ -61,14 +60,14 @@ namespace MechLab
         public float maximumUprightTorque = 1400f;
         public float maximumBodySpeed = 7f;
         public float maximumBodySpin = 3f;
-
         [Header("Surface pulling")]
         public LayerMask environmentLayers = 1 << 8;
         public LayerMask hittableLayers = (1 << 8) | (1 << 10);
         public LayerMask grabbableLayers = 1 << 10;
         public float pullVelocityGain = 1.5f;
         public float anchorPositionGain = 3f;
-        [Range(0f, 1f)] public float anchorControlBlend = 0.75f;
+        [Range(0f, 1f)]
+        public float anchorControlBlend = 0.75f;
         public bool projectPullToSurface = true;
         [Tooltip("Rotate projected slope/wall strokes onto the ground plane, following the recovered single-player anchor path.")]
         public bool rotateSurfacePullToGround = true;
@@ -78,7 +77,6 @@ namespace MechLab
         public float maximumPullSpeed = 5f;
         public float anchorBreakDistance = 0.65f;
         public bool verticalPulling = false;
-
         [Header("Strikes")]
         public float strikeHistorySeconds = 0.06f;
         public float minimumStrikeSpeed = 1.2f;
@@ -96,7 +94,6 @@ namespace MechLab
         public float damagePower = 1.2f;
         public float recoverySeconds = 0.11f;
         public float impactDriveFraction = 0.28f;
-
         [Header("Grab")]
         public float grabRadius = 0.23f;
         public float maximumGrabMass = 50f;
@@ -110,7 +107,6 @@ namespace MechLab
         public float throwBoost = 1f;
         public bool throwUsesFastestHistory = true;
         public float throwHistorySeconds = 0.1f;
-
         [Header("Enemy and feedback")]
         public float targetHealth = 100f;
         public float staggerThreshold = 0.4f;

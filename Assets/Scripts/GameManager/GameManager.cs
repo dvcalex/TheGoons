@@ -21,13 +21,30 @@ public enum RoundResult
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager _instance { get; private set; }
+    public static GameManager _instance
+    {
+        get;
+        private set;
+    }
 
     public static event Action<GameManager> InstanceChanged;
 
-    public GamePhase CurrentPhase { get; private set; } = GamePhase.Lobby;
-    public RoundResult Result { get; private set; }
-    public float timeRemaining { get; private set; }
+    public GamePhase CurrentPhase
+    {
+        get;
+        private set;
+    } = GamePhase.Lobby;
+    public RoundResult Result
+    {
+        get;
+        private set;
+    }
+
+    public float timeRemaining
+    {
+        get;
+        private set;
+    }
 
     public bool timerIsRunning
     {
@@ -54,8 +71,8 @@ public class GameManager : MonoBehaviour
     public event Action<int> HidersCountChanged;
 
     [Header("Round")]
-    [SerializeField, Min(0.1f)] private float roundDuration = 60f;
-
+    [SerializeField, Min(0.1f)]
+    private float roundDuration = 60f;
     public Player[] players = Array.Empty<Player>();
 
     [Header("Optional UI")]
@@ -63,10 +80,12 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI hidersCountText;
 
     [Header("Debug")]
-    [SerializeField] private bool isDebugging;
-    [SerializeField] private GamePhase debugPhase = GamePhase.Lobby;
-    [SerializeField] private RoundResult debugResult = RoundResult.None;
-
+    [SerializeField]
+    private bool isDebugging;
+    [SerializeField]
+    private GamePhase debugPhase = GamePhase.Lobby;
+    [SerializeField]
+    private RoundResult debugResult = RoundResult.None;
     private readonly List<Player> remainingHiders = new();
     private bool changingPhase;
 
@@ -127,6 +146,7 @@ public class GameManager : MonoBehaviour
                 EndGameInternal(targetResult);
             }
         }
+
         // Handle Result changes while already in Results phase
         else if (CurrentPhase == GamePhase.Results && debugResult != Result && debugResult != RoundResult.None)
         {
@@ -194,7 +214,6 @@ public class GameManager : MonoBehaviour
 
         timeRemaining = roundDuration;
         ChangePhase(GamePhase.Playing);
-
         debugPhase = CurrentPhase;
         debugResult = Result;
     }
@@ -241,7 +260,6 @@ public class GameManager : MonoBehaviour
     private void EndGameInternal(RoundResult result)
     {
         ChangePhase(GamePhase.Results, result);
-
         debugPhase = CurrentPhase;
         debugResult = Result;
     }
@@ -265,9 +283,7 @@ public class GameManager : MonoBehaviour
 
         remainingHiders.Clear();
         timeRemaining = roundDuration;
-
         ChangePhase(GamePhase.Lobby);
-
         debugPhase = CurrentPhase;
         debugResult = Result;
     }
@@ -289,7 +305,6 @@ public class GameManager : MonoBehaviour
 
             CurrentPhase = phase;
             Result = result;
-
             UpdateUI();
             PhaseChanged?.Invoke(phase);
 

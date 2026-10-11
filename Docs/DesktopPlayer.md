@@ -1,6 +1,6 @@
 # DesktopPlayer movement
 
-Open `Assets/Scenes/AlexScene.unity`, press Play, and click Host in the existing
+Open `Assets/Scenes/StartupScene.unity`, press Play, and click Host in the existing
 NetworkDebug UI. NetworkPlayer spawns DesktopPlayer through the existing flow
 (the current NetworkPlayer prefab has VR_Override enabled). The scene contains
 a crouch tunnel, a small jump platform, a ramp, and a pushable box, without an

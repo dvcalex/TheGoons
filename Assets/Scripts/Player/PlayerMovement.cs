@@ -16,9 +16,8 @@ public class PlayerMovement : NetworkBehaviour
     public Transform playerGFX;
     public Transform groundCheck;
     public Animator anim;
-
-    float currentAnimationSpeed = 0f;
-    float desiredAnimationSpeed = 0f;
+    private float currentAnimationSpeed = 0f;
+    private float desiredAnimationSpeed = 0f;
 
     [Header("Movement feel")]
     public float walkSpeed = 4.8f;
@@ -36,7 +35,6 @@ public class PlayerMovement : NetworkBehaviour
     public float dashBrake = 180f;
     public float dashCooldownTime = 3f;
     private float dashCooldownTimer = 0f;
-
     private float dashTimer;
     private Vector3 dashDirection;
 
@@ -44,11 +42,9 @@ public class PlayerMovement : NetworkBehaviour
     public float dashFOVBoost = 25f;
     public float dashFOVInSpeed = 35f;
     public float dashFOVOutSpeed = 10f;
-
     private float currentDashFOV;
 
     [Space]
-
     [Tooltip("Velocity servo response in 1/seconds. Higher is snappier.")]
     public float velocityGain = 18f;
     [Tooltip("Damping on measured acceleration, not input changes (no derivative kick).")]
@@ -96,40 +92,98 @@ public class PlayerMovement : NetworkBehaviour
     public string moveXVar = "MoveX", moveZVar = "MoveZ", jumpTrigger = "Jump";
     public float animChangeSpeed = 10f;
     public List<Knockback> _knockbacks = new List<Knockback>();
+    public float CurrentStamina
+    {
+        get
+        {
+            return currentStamina;
+        }
+    }
 
-    public float CurrentStamina => currentStamina;
-    public float CrouchAmount => Mathf.InverseLerp(standingHeight, crouchHeight, capsule.height);
-    public float FacingYaw { get; private set; }
-    public Vector3 GroundVelocity { get; private set; }
-    public Vector3 RelativeVelocity => rb.linearVelocity - GroundVelocity;
-    public bool HasControl => IsOwner && _player != null;
-    public float HeadPitch => HasControl && mouseLook != null ? mouseLook.Pitch : remotePitch;
+    public float CrouchAmount
+    {
+        get
+        {
+            return Mathf.InverseLerp(standingHeight, crouchHeight, capsule.height);
+        }
+    }
+
+    public float FacingYaw
+    {
+        get;
+        private set;
+    }
+
+    public Vector3 GroundVelocity
+    {
+        get;
+        private set;
+    }
+
+    public Vector3 RelativeVelocity
+    {
+        get
+        {
+            return rb.linearVelocity - GroundVelocity;
+        }
+    }
+
+    public bool HasControl
+    {
+        get
+        {
+            return IsOwner && _player != null;
+        }
+    }
+
+    public float HeadPitch
+    {
+        get
+        {
+            return HasControl && mouseLook != null ? mouseLook.Pitch : remotePitch;
+        }
+    }
 
     // Seven payload bytes. Continuous yaw preserves the direction of fast turns
     // across wraparound and skipped samples; no per-limb transforms are sent.
     public struct PoseState : INetworkSerializable, System.IEquatable<PoseState>
     {
         public float Yaw;
-        public byte Crouch, Flags;
+        public byte Crouch;
+        public byte Flags;
         public sbyte Pitch;
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer)
+            where T : IReaderWriter
         {
             serializer.SerializeValue(ref Yaw);
             serializer.SerializeValue(ref Crouch);
             serializer.SerializeValue(ref Flags);
             serializer.SerializeValue(ref Pitch);
         }
-        public bool Equals(PoseState other) => Yaw == other.Yaw && Crouch == other.Crouch && Flags == other.Flags && Pitch == other.Pitch;
+
+        public bool Equals(PoseState other)
+        {
+            return Yaw == other.Yaw && Crouch == other.Crouch && Flags == other.Flags && Pitch == other.Pitch;
+        }
     }
-    private readonly NetworkVariable<PoseState> networkPose = new NetworkVariable<PoseState>(default,
-        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private float continuousYaw, sampledYaw, remoteYaw, remotePitch, poseSendTimer;
+
+    private readonly NetworkVariable<PoseState> networkPose = new NetworkVariable<PoseState>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private float continuousYaw;
+    private float sampledYaw;
+    private float remoteYaw;
+    private float remotePitch;
+    private float poseSendTimer;
 
     public override void OnNetworkSpawn()
     {
         sampledYaw = rb.rotation.eulerAngles.y;
         continuousYaw = sampledYaw;
-        if (IsOwner) PublishPose();
+
+        if (IsOwner)
+        {
+            PublishPose();
+        }
         else
         {
             remoteYaw = networkPose.Value.Yaw;
@@ -151,6 +205,7 @@ public class PlayerMovement : NetworkBehaviour
     private void ApplyRemotePose(float blend)
     {
         var pose = networkPose.Value;
+
         // Interpolate the unwrapped scalar, never choose a quaternion's shortest
         // path between snapshots that may span more than half a turn.
         // Bound each physics step so even a long delivery gap cannot make the
@@ -158,8 +213,7 @@ public class PlayerMovement : NetworkBehaviour
         remoteYaw += Mathf.Clamp((pose.Yaw - remoteYaw) * blend, -90f, 90f);
         remotePitch = Mathf.Lerp(remotePitch, pose.Pitch * 90f / 127f, blend);
         transform.rotation = Quaternion.Euler(0f, remoteYaw, 0f);
-        capsule.height = Mathf.Lerp(capsule.height,
-            Mathf.Lerp(standingHeight, crouchHeight, pose.Crouch / 255f), blend);
+        capsule.height = Mathf.Lerp(capsule.height, Mathf.Lerp(standingHeight, crouchHeight, pose.Crouch / 255f), blend);
         capsule.center = standingCenter - Vector3.up * ((standingHeight - capsule.height) * 0.5f);
         crouching = pose.Crouch > 127;
         isGrounded = (pose.Flags & 1) != 0;
@@ -167,13 +221,27 @@ public class PlayerMovement : NetworkBehaviour
     }
 
     private Vector2 moveInput;
-    private bool crouchInput, runInput, jumpHeld, locked, jumpConsumed, rechargingStamina;
-    private float currentStamina, rechargeTimer, coyoteLeft, jumpBufferLeft, ignoreGroundLeft;
-    private Vector3 groundNormal = Vector3.up, standingCenter, originalGFXPosition;
+    private bool crouchInput;
+    private bool runInput;
+    private bool jumpHeld;
+    private bool locked;
+    private bool jumpConsumed;
+    private bool rechargingStamina;
+    private float currentStamina;
+    private float rechargeTimer;
+    private float coyoteLeft;
+    private float jumpBufferLeft;
+    private float ignoreGroundLeft;
+    private Vector3 groundNormal = Vector3.up;
+    private Vector3 standingCenter;
+    private Vector3 originalGFXPosition;
     private readonly RaycastHit[] groundHits = new RaycastHit[16];
     private readonly Collider[] clearanceHits = new Collider[16];
     private readonly VelocityServo servo = new VelocityServo();
-    private InputAction moveAction, crouchAction, runAction, jumpAction;
+    private InputAction moveAction;
+    private InputAction crouchAction;
+    private InputAction runAction;
+    private InputAction jumpAction;
     private DesktopRagdoll ragdoll;
 
     private void Awake()
@@ -182,6 +250,7 @@ public class PlayerMovement : NetworkBehaviour
         capsule = capsule != null ? capsule : GetComponent<CapsuleCollider>();
         ragdoll = GetComponent<DesktopRagdoll>();
         rb.useGravity = false;
+
         // Stable locomotion body; the attached ragdoll supplies the wobble.
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
@@ -192,23 +261,29 @@ public class PlayerMovement : NetworkBehaviour
         capsule.height = standingHeight;
         currentStamina = maxStamina;
         FacingYaw = rb.rotation.eulerAngles.y;
-        if (playerGFX != null) originalGFXPosition = playerGFX.localPosition;
+
+        if (playerGFX != null)
+        {
+            originalGFXPosition = playerGFX.localPosition;
+        }
     }
 
     private void Update()
     {
         if (!IsOwner)
+        {
             return;
+        }
 
         //Debug.Log("Ragdoll State: " + Player.me._ragdollManager.isRagdoll);
         anim.SetBool("Enabled", !Player.me._ragdollManager.isRagdoll);
 
-        if (!HasControl || _player._input == null || !_player._input.enabled || Player.me._ragdollManager.isRagdoll) 
+        if (!HasControl || _player._input == null || !_player._input.enabled || Player.me._ragdollManager.isRagdoll)
         {
             moveInput = Vector2.zero;
             return;
-        } 
-        
+        }
+
         if (moveAction == null)
         {
             var actions = _player._input.actions;
@@ -217,15 +292,22 @@ public class PlayerMovement : NetworkBehaviour
             runAction = actions.FindAction("Run");
             jumpAction = actions.FindAction("Jump");
         }
+
         moveInput = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
         crouchInput = crouchAction.IsPressed();
         runInput = runAction.IsPressed();
         jumpHeld = jumpAction.IsPressed();
 
-        if (Player.me._input.actions["Dash"].WasPressedThisFrame()) 
+        if (Player.me._input.actions["Dash"].WasPressedThisFrame())
+        {
             Dash();
+        }
 
-        if (!locked && !isStunned && jumpAction.WasPressedThisFrame()) jumpBufferLeft = jumpBufferTime;
+        if (!locked && !isStunned && jumpAction.WasPressedThisFrame())
+        {
+            jumpBufferLeft = jumpBufferTime;
+        }
+
         if (anim != null)
         {
             //Vector3 local = Quaternion.Inverse(Quaternion.Euler(0f, FacingYaw, 0f)) * RelativeVelocity;
@@ -248,29 +330,44 @@ public class PlayerMovement : NetworkBehaviour
             desiredAnimationSpeed = 0f;
         }
 
-        currentAnimationSpeed = Mathf.Lerp(currentAnimationSpeed, desiredAnimationSpeed, 1f - Mathf.Exp(-animChangeSpeed * Time.deltaTime));
-
+        currentAnimationSpeed = Mathf.Lerp(
+            currentAnimationSpeed,
+            desiredAnimationSpeed,
+            1f - Mathf.Exp(-animChangeSpeed * Time.deltaTime)
+        );
         anim.SetFloat("Speed", currentAnimationSpeed);
-
     }
 
     private void FixedUpdate()
     {
-        if (IsSpawned && !IsOwner) ApplyRemotePose(1f - Mathf.Exp(-30f * Time.fixedDeltaTime));
-        if (!HasControl || rb.isKinematic) return;
+        if (IsSpawned && !IsOwner)
+        {
+            ApplyRemotePose(1f - Mathf.Exp(-30f * Time.fixedDeltaTime));
+        }
+
+        if (!HasControl || rb.isKinematic)
+        {
+            return;
+        }
+
         float dt = Time.fixedDeltaTime;
         dashCooldownTimer = Mathf.Max(0f, dashCooldownTimer - dt);
+
         CheckGrounded(dt);
         ProcessKnockback();
+
         if (!locked && !isStunned)
         {
             UpdateCrouching(dt);
             UpdateMovementState(dt);
             ApplyMovement(dt);
             ProcessJump();
+
             float yawError = Mathf.DeltaAngle(rb.rotation.eulerAngles.y, FacingYaw) * Mathf.Deg2Rad;
-            rb.AddTorque(Vector3.up * Mathf.Clamp(yawError * facingSpring - rb.angularVelocity.y * facingDamping,
-                -180f, 180f), ForceMode.Acceleration);
+            rb.AddTorque(
+                Vector3.up * Mathf.Clamp(yawError * facingSpring - rb.angularVelocity.y * facingDamping, -180f, 180f),
+                ForceMode.Acceleration
+            );
         }
         else
         {
@@ -278,31 +375,26 @@ public class PlayerMovement : NetworkBehaviour
             jumpBufferLeft = 0f;
             servo.Reset();
         }
+
         jumpBufferLeft = Mathf.Max(0f, jumpBufferLeft - dt);
-        float weight = rb.linearVelocity.y < 0f ? fallingGravityWeight : (!jumpHeld && jumpConsumed ? releasedJumpGravityWeight : 1f);
+        float weight = rb.linearVelocity.y < 0f
+            ? fallingGravityWeight
+            : (!jumpHeld && jumpConsumed ? releasedJumpGravityWeight : 1f);
         rb.AddForce(Vector3.up * gravity * weight, ForceMode.Acceleration);
+
         if (isGrounded && !jumpConsumed)
+        {
             rb.AddForce(-groundNormal * groundStickAcceleration, ForceMode.Acceleration);
+        }
 
         if (mouseLook != null)
         {
             float targetDashFOV = dashTimer > 0f ? dashFOVBoost : 0f;
-
-            float speed = dashTimer > 0f
-                ? dashFOVInSpeed
-                : dashFOVOutSpeed;
-
-            currentDashFOV = Mathf.MoveTowards(
-                currentDashFOV,
-                targetDashFOV,
-                speed * Time.fixedDeltaTime
-            );
+            float speed = dashTimer > 0f ? dashFOVInSpeed : dashFOVOutSpeed;
+            currentDashFOV = Mathf.MoveTowards(currentDashFOV, targetDashFOV, speed * Time.fixedDeltaTime);
 
             float movementFOV = Mathf.Clamp01(RelativeVelocity.magnitude / runSpeed) * 6f;
-
-            mouseLook.SetZoom(
-                mouseLook.defaultFOV + movementFOV + currentDashFOV
-            );
+            mouseLook.SetZoom(mouseLook.defaultFOV + movementFOV + currentDashFOV);
         }
 
         if (IsSpawned)
@@ -311,6 +403,7 @@ public class PlayerMovement : NetworkBehaviour
             continuousYaw += Mathf.DeltaAngle(sampledYaw, yaw);
             sampledYaw = yaw;
             poseSendTimer -= dt;
+
             if (poseSendTimer <= 0f)
             {
                 PublishPose();
@@ -319,63 +412,102 @@ public class PlayerMovement : NetworkBehaviour
         }
     }
 
-    private bool IsSelf(Collider other) => other.transform.IsChildOf(transform);
+    private bool IsSelf(Collider other)
+    {
+        return other.transform.IsChildOf(transform);
+    }
 
     private void CheckGrounded(float dt)
     {
         ignoreGroundLeft = Mathf.Max(0f, ignoreGroundLeft - dt);
+
         // Interpolated Transform positions can lag the physics pose by a tick.
         Vector3 center = rb.position + rb.rotation * Vector3.Scale(capsule.center, transform.lossyScale);
         float radius = capsule.radius * Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.z));
         float halfHeight = Mathf.Max(radius, capsule.height * Mathf.Abs(transform.lossyScale.y) * 0.5f);
         float probeRadius = radius * 0.9f;
         Vector3 origin = center - Vector3.up * (halfHeight - radius) + Vector3.up * 0.08f;
-        int count = gameObject.scene.GetPhysicsScene().SphereCast(origin, probeRadius, Vector3.down, groundHits,
-            0.08f + radius - probeRadius + groundDistance, groundMask, QueryTriggerInteraction.Ignore);
+        int count = gameObject.scene.GetPhysicsScene().SphereCast(
+            origin,
+            probeRadius,
+            Vector3.down,
+            groundHits,
+            0.08f + radius - probeRadius + groundDistance,
+            groundMask,
+            QueryTriggerInteraction.Ignore
+        );
         float nearest = float.PositiveInfinity;
         isGrounded = false;
         GroundVelocity = Vector3.zero;
         groundNormal = Vector3.up;
+
         for (int i = 0; i < count && ignoreGroundLeft <= 0f; i++)
         {
             var hit = groundHits[i];
-            if (IsSelf(hit.collider) || hit.distance >= nearest ||
-                Vector3.Dot(hit.normal, Vector3.up) < Mathf.Cos(maximumGroundAngle * Mathf.Deg2Rad)) continue;
+
+            if (IsSelf(hit.collider) || hit.distance >= nearest || Vector3.Dot(hit.normal, Vector3.up) < Mathf.Cos(maximumGroundAngle * Mathf.Deg2Rad))
+            {
+                continue;
+            }
+
             Vector3 supportVelocity = hit.rigidbody != null ? hit.rigidbody.GetPointVelocity(hit.point) : Vector3.zero;
-            if (rb.linearVelocity.y - supportVelocity.y > 1.5f) continue;
+
+            if (rb.linearVelocity.y - supportVelocity.y > 1.5f)
+            {
+                continue;
+            }
+
             nearest = hit.distance;
             isGrounded = true;
             groundNormal = hit.normal;
             GroundVelocity = supportVelocity;
         }
+
         if (isGrounded)
         {
             coyoteLeft = groundedCoyoteTime;
             jumpConsumed = false;
         }
-        else coyoteLeft = Mathf.Max(0f, coyoteLeft - dt);
+        else
+        {
+            coyoteLeft = Mathf.Max(0f, coyoteLeft - dt);
+        }
     }
 
     private void UpdateMovementState(float dt)
     {
         isMoving = moveInput.sqrMagnitude > 0.001f;
-        running = runInput && isMoving && !crouching && !aiming &&
-            (!useStamina || (currentStamina > 0f && !rechargingStamina));
+        running = runInput && isMoving && !crouching && !aiming && (!useStamina || (currentStamina > 0f && !rechargingStamina));
+
         if (useStamina)
         {
             if (running)
             {
                 currentStamina = Mathf.Max(0f, currentStamina - staminaCost * dt);
                 rechargeTimer = intialRechargeWait;
-                if (currentStamina <= 0f) { rechargingStamina = true; running = false; }
+
+                if (currentStamina <= 0f)
+                {
+                    rechargingStamina = true;
+                    running = false;
+                }
             }
             else
             {
                 rechargeTimer -= dt;
-                if (rechargeTimer <= 0f) currentStamina = Mathf.Min(maxStamina, currentStamina + staminaGain * dt);
-                if (currentStamina >= staminaRechargeThreshold) rechargingStamina = false;
+
+                if (rechargeTimer <= 0f)
+                {
+                    currentStamina = Mathf.Min(maxStamina, currentStamina + staminaGain * dt);
+                }
+
+                if (currentStamina >= staminaRechargeThreshold)
+                {
+                    rechargingStamina = false;
+                }
             }
         }
+
         walking = isGrounded && isMoving && !running && !crouching;
     }
 
@@ -383,27 +515,27 @@ public class PlayerMovement : NetworkBehaviour
     {
         // Check dashCooldownTimer instead of dashTimer so it respects the cooldown
         if (!HasControl || locked || isStunned || dashCooldownTimer > 0f)
+        {
             return;
+        }
 
-        dashDirection = Quaternion.Euler(0f, FacingYaw, 0f)
-            * new Vector3(moveInput.x, 0f, moveInput.y);
+        dashDirection = Quaternion.Euler(0f, FacingYaw, 0f) * new Vector3(moveInput.x, 0f, moveInput.y);
 
         if (dashDirection.sqrMagnitude < 0.001f)
+        {
             return;
+        }
 
         dashDirection.Normalize();
-
         Vector3 velocity = rb.linearVelocity;
-
         Vector3 targetVelocity = dashDirection * dashSpeed;
-
-        Vector3 velocityChange = targetVelocity
-            - new Vector3(velocity.x, 0f, velocity.z);
-
+        Vector3 velocityChange = targetVelocity - new Vector3(velocity.x, 0f, velocity.z);
         rb.AddForce(velocityChange, ForceMode.VelocityChange);
 
         if (ragdoll != null)
+        {
             ragdoll.AddVelocityChange(velocityChange);
+        }
 
         dashTimer = dashDuration;
 
@@ -426,17 +558,15 @@ public class PlayerMovement : NetworkBehaviour
 
             if (dashTimer <= 0f)
             {
-                Vector3 horizontalVelocity =
-                    Vector3.ProjectOnPlane(rb.linearVelocity, Vector3.up);
-
+                Vector3 horizontalVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, Vector3.up);
                 Vector3 targetVelocity = dashDirection * walkSpeed;
-
                 Vector3 change = targetVelocity - horizontalVelocity;
-
                 rb.AddForce(change, ForceMode.VelocityChange);
 
                 if (ragdoll != null)
+                {
                     ragdoll.AddVelocityChange(change);
+                }
 
                 servo.Reset();
             }
@@ -446,37 +576,74 @@ public class PlayerMovement : NetworkBehaviour
 
         Vector3 direction = Quaternion.Euler(0f, FacingYaw, 0f) * new Vector3(moveInput.x, 0f, moveInput.y);
         Vector3 planeNormal = isGrounded ? groundNormal : Vector3.up;
-        if (isGrounded) direction = Vector3.ProjectOnPlane(direction, planeNormal).normalized * moveInput.magnitude;
+
+        if (isGrounded)
+        {
+            direction = Vector3.ProjectOnPlane(direction, planeNormal).normalized * moveInput.magnitude;
+        }
+
         float speed = crouching ? crouchWalkSpeed : (running ? (isGrounded ? runSpeed : runSpeedAir) : walkSpeed);
-        if (aiming) speed *= Mathf.Clamp01(1.65f - currentChargeState);
+
+        if (aiming)
+        {
+            speed *= Mathf.Clamp01(1.65f - currentChargeState);
+        }
+
         Vector3 velocity = Vector3.ProjectOnPlane(RelativeVelocity, planeNormal);
+
         // No input in air preserves momentum. Input steers without braking inherited jump speed.
-        if (!isGrounded && !isMoving) { servo.Reset(); return; }
+        if (!isGrounded && !isMoving)
+        {
+            servo.Reset();
+            return;
+        }
+
         Vector3 target = direction * speed;
+
         if (!isGrounded && velocity.magnitude > speed)
+        {
             target = direction.normalized * velocity.magnitude * moveInput.magnitude;
-        float limit = !isGrounded ? airAcceleration : !isMoving ? groundDeceleration :
-            Vector3.Dot(direction, velocity) < 0f ? directionChangeAcceleration : groundAcceleration;
-        if (hasKnockback) limit *= 0.3f;
-        Vector3 acceleration = servo.Step(velocity, target, velocityGain, velocityIntegralGain,
-            velocityDamping, limit, dt);
+        }
+
+        float limit = !isGrounded ? airAcceleration : !isMoving ? groundDeceleration : Vector3.Dot(direction, velocity) < 0f ? directionChangeAcceleration : groundAcceleration;
+
+        if (hasKnockback)
+        {
+            limit *= 0.3f;
+        }
+
+        Vector3 acceleration = servo.Step(velocity, target, velocityGain, velocityIntegralGain, velocityDamping, limit, dt);
         rb.AddForce(Vector3.ProjectOnPlane(acceleration, planeNormal), ForceMode.Acceleration);
     }
 
     private void ProcessJump()
     {
-        if (jumpBufferLeft <= 0f || jumpConsumed || (!isGrounded && coyoteLeft <= 0f) || crouching) return;
+        if (jumpBufferLeft <= 0f || jumpConsumed || (!isGrounded && coyoteLeft <= 0f) || crouching)
+        {
+            return;
+        }
+
         jumpBufferLeft = coyoteLeft = 0f;
         ignoreGroundLeft = 0.16f;
         jumpConsumed = true;
         isGrounded = false;
         float desired = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
         float change = Mathf.Max(0f, desired - (rb.linearVelocity.y - GroundVelocity.y));
+
         // Give every ragdoll body the same jump impulse so joints don't absorb takeoff.
         Vector3 impulse = Vector3.up * change;
         rb.AddForce(impulse, ForceMode.VelocityChange);
-        if (ragdoll != null) ragdoll.AddVelocityChange(impulse);
-        if (anim != null) anim.SetTrigger(jumpTrigger);
+
+        if (ragdoll != null)
+        {
+            ragdoll.AddVelocityChange(impulse);
+        }
+
+        if (anim != null)
+        {
+            anim.SetTrigger(jumpTrigger);
+        }
+
         servo.Reset();
     }
 
@@ -486,70 +653,147 @@ public class PlayerMovement : NetworkBehaviour
         float height = Mathf.MoveTowards(capsule.height, crouching ? crouchHeight : standingHeight, crouchSpeed * dt);
         capsule.height = Mathf.Max(capsule.radius * 2f, height);
         capsule.center = standingCenter - Vector3.up * ((standingHeight - capsule.height) * 0.5f);
+
         if (ragdoll == null && playerGFX != null)
+        {
             playerGFX.localPosition = originalGFXPosition - Vector3.up * ((standingHeight - height) * 0.5f);
+        }
     }
 
     private bool CanStandUp()
     {
-        if (capsule.height >= standingHeight - 0.001f) return true;
+        if (capsule.height >= standingHeight - 0.001f)
+        {
+            return true;
+        }
+
         float radius = capsule.radius * Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.z)) * 0.96f;
         float halfHeight = Mathf.Max(radius, standingHeight * Mathf.Abs(transform.lossyScale.y) * 0.5f - 0.02f);
         Vector3 center = rb.position + rb.rotation * Vector3.Scale(standingCenter, transform.lossyScale);
-        int count = gameObject.scene.GetPhysicsScene().OverlapCapsule(center - Vector3.up * (halfHeight - radius),
-            center + Vector3.up * (halfHeight - radius), radius, clearanceHits, ceilingMask, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < count; i++) if (!IsSelf(clearanceHits[i])) return false;
+        int count = gameObject.scene.GetPhysicsScene().OverlapCapsule(
+            center - Vector3.up * (halfHeight - radius),
+            center + Vector3.up * (halfHeight - radius),
+            radius,
+            clearanceHits,
+            ceilingMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        for (int i = 0; i < count; i++)
+        {
+            if (!IsSelf(clearanceHits[i]))
+            {
+                return false;
+            }
+        }
+
         return count < clearanceHits.Length; // A saturated query must never allow standing through a ceiling.
     }
 
-    public void SetFacingYaw(float yaw) => FacingYaw = Mathf.Repeat(yaw, 360f);
+    public void SetFacingYaw(float yaw)
+    {
+        FacingYaw = Mathf.Repeat(yaw, 360f);
+    }
+
     public void ProcessKnockback()
     {
         hasKnockback = _knockbacks.Count > 0;
         isStunned = false;
+
         for (int i = _knockbacks.Count - 1; i >= 0; i--)
         {
             var knockback = _knockbacks[i];
+
             if (!knockback.applied)
             {
                 Vector3 impulse = knockback.direction.normalized * knockback.intensity;
                 rb.AddForce(impulse, ForceMode.VelocityChange);
-                if (ragdoll != null) ragdoll.AddVelocityChange(impulse);
+
+                if (ragdoll != null)
+                {
+                    ragdoll.AddVelocityChange(impulse);
+                }
+
                 knockback.applied = true;
                 servo.Reset();
             }
+
             isStunned |= knockback.stun;
             knockback.time -= Time.fixedDeltaTime;
-            if (knockback.time <= 0f) _knockbacks.RemoveAt(i);
+
+            if (knockback.time <= 0f)
+            {
+                _knockbacks.RemoveAt(i);
+            }
         }
     }
 
-    public void AddKnockback(Vector3 direction, float intensity = 2f, bool stunPlayer = false,
-        float time = 0.25f, float fadeOutTime = 0.15f) =>
+    public void AddKnockback(
+        Vector3 direction,
+        float intensity = 2f,
+        bool stunPlayer = false,
+        float time = 0.25f,
+        float fadeOutTime = 0.15f
+    )
+    {
         _knockbacks.Add(new Knockback(direction, intensity, stunPlayer, time, fadeOutTime));
-    public void AddKnockback(Vector3 direction, Knockback knockback) =>
+    }
+
+    public void AddKnockback(Vector3 direction, Knockback knockback)
+    {
         AddKnockback(direction, knockback.intensity, knockback.stun, knockback.time, knockback.fadeOutTime);
+    }
+
     public void ResetVelocity()
     {
         rb.linearVelocity = rb.angularVelocity = Vector3.zero;
         servo.Reset();
-        if (ragdoll != null) ragdoll.ResetVelocity();
+
+        if (ragdoll != null)
+        {
+            ragdoll.ResetVelocity();
+        }
     }
+
     public void MoveTo(Vector3 position)
     {
-        if (ragdoll != null && ragdoll.Bodies != null) ragdoll.MoveRootTo(position);
-        else rb.position = position;
+        if (ragdoll != null && ragdoll.Bodies != null)
+        {
+            ragdoll.MoveRootTo(position);
+        }
+        else
+        {
+            rb.position = position;
+        }
+
         ResetVelocity();
         coyoteLeft = jumpBufferLeft = 0f;
         isGrounded = false;
         GroundVelocity = Vector3.zero;
         Physics.SyncTransforms();
     }
-    public void SetLock(bool state) { locked = state; moveInput = Vector2.zero; jumpBufferLeft = 0f; servo.Reset(); }
-    public bool IsLocked() => locked;
+
+    public void SetLock(bool state)
+    {
+        locked = state;
+        moveInput = Vector2.zero;
+        jumpBufferLeft = 0f;
+        servo.Reset();
+    }
+
+    public bool IsLocked()
+    {
+        return locked;
+    }
+
     private void OnApplicationFocus(bool focused)
     {
-        if (!focused) { moveInput = Vector2.zero; runInput = crouchInput = jumpHeld = false; jumpBufferLeft = 0f; }
+        if (!focused)
+        {
+            moveInput = Vector2.zero;
+            runInput = crouchInput = jumpHeld = false;
+            jumpBufferLeft = 0f;
+        }
     }
 }
 
@@ -557,11 +801,18 @@ public class PlayerMovement : NetworkBehaviour
 // filtered collision spikes and conditional integration to prevent wall wind-up.
 public sealed class VelocityServo
 {
-    private Vector3 previous, derivative, integral;
+    private Vector3 previous;
+    private Vector3 derivative;
+    private Vector3 integral;
     private bool initialized;
+
     public Vector3 Step(Vector3 current, Vector3 target, float p, float i, float d, float limit, float dt)
     {
-        if (dt <= 0f) return Vector3.zero;
+        if (dt <= 0f)
+        {
+            return Vector3.zero;
+        }
+
         Vector3 error = target - current;
         Vector3 measured = initialized ? (current - previous) / dt : Vector3.zero;
         derivative = Vector3.Lerp(derivative, measured, dt / (0.08f + dt));
@@ -569,24 +820,51 @@ public sealed class VelocityServo
         initialized = true;
         Vector3 candidate = Vector3.ClampMagnitude(integral + error * dt, 2f);
         Vector3 output = p * error + i * candidate - d * derivative;
-        if (output.magnitude <= limit) integral = candidate;
-        else integral = Vector3.zero;
+
+        if (output.magnitude <= limit)
+        {
+            integral = candidate;
+        }
+        else
+        {
+            integral = Vector3.zero;
+        }
+
         // Limit both force and one-tick overshoot; no direct writes to velocity.
         return Vector3.ClampMagnitude(output, Mathf.Min(limit, error.magnitude / dt));
     }
-    public void Reset() { initialized = false; previous = derivative = integral = Vector3.zero; }
+
+    public void Reset()
+    {
+        initialized = false;
+        previous = derivative = integral = Vector3.zero;
+    }
 }
 
 [System.Serializable]
 public class Knockback
 {
-    public Knockback(Vector3 direction, float intensity = 2f, bool stunPlayer = false, float time = 1f, float fadeOutTime = 0.5f)
+    public Knockback(
+        Vector3 direction,
+        float intensity = 2f,
+        bool stunPlayer = false,
+        float time = 1f,
+        float fadeOutTime = 0.5f
+    )
     {
-        this.direction = direction; this.intensity = intensity; stun = stunPlayer;
-        this.time = time; this.fadeOutTime = fadeOutTime;
+        this.direction = direction;
+        this.intensity = intensity;
+        stun = stunPlayer;
+        this.time = time;
+        this.fadeOutTime = fadeOutTime;
     }
-    public float intensity, time, fadeOutTime;
+
+    public float intensity;
+    public float time;
+    public float fadeOutTime;
     public bool stun;
-    [HideInInspector] public Vector3 direction;
-    [HideInInspector] public bool applied;
+    [HideInInspector]
+    public Vector3 direction;
+    [HideInInspector]
+    public bool applied;
 }
