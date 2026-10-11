@@ -36,6 +36,11 @@ public static class AutoFracture
         {
             var path = AssetDatabase.GUIDToAssetPath(g);
             if (path.StartsWith(k_OutputFolder)) continue; // don't re-fracture our output
+
+            // Only include prefabs that are directly in the selected folder (no recursion)
+            var dir = Path.GetDirectoryName(path).Replace('\\', '/');
+            if (dir != root) continue;
+
             paths.Add(path);
         }
 
@@ -72,79 +77,105 @@ public static class AutoFracture
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         if (prefab == null) return false;
 
-        // Place prefab in scene
+        // Place prefab in scene and unpack completely
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-
-        // Unpack prefab completely
         PrefabUtility.UnpackPrefabInstance(instance, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
 
-        // Get child with mesh filter
-        var meshFilter = instance.GetComponentInChildren<MeshFilter>();
-        if (meshFilter == null || meshFilter.sharedMesh == null)
+        // Snapshot every mesh object up front (including inactive ones).
+        // Fracturing adds new MeshFilters to the hierarchy, so we must not query live.
+        var meshFilters = new List<MeshFilter>(instance.GetComponentsInChildren<MeshFilter>(true));
+        meshFilters.RemoveAll(mf => mf.sharedMesh == null);
+
+        if (meshFilters.Count == 0)
         {
             Debug.LogWarning($"[AutoFracture] No MeshFilter found in {prefab.name}, skipping.");
             Object.DestroyImmediate(instance);
             return false;
         }
 
-        GameObject original = meshFilter.gameObject;
+        string meshDir = $"{k_MeshFolder}/{prefab.name}";
+        EnsureFolder(meshDir);
+        int meshCounter = 0; // shared across the whole prefab so asset names never collide
+        int fracturedCount = 0;
 
-        // Unparent child with mesh filter
-        if (original != instance)
+        foreach (var mf in meshFilters)
         {
-            original.transform.SetParent(null, true);
-            Object.DestroyImmediate(instance); // leftover container is no longer needed
+            GameObject original = mf.gameObject;
+
+            if (!LibreFracture.LibreFracture.IsFracturable(original))
+            {
+                Debug.LogWarning($"[AutoFracture] {prefab.name}/{original.name} is not fracturable, skipping.");
+                continue;
+            }
+
+            Bounds bounds = GetBounds(original);
+            Selection.activeGameObject = original;
+
+            var parameters = BuildParameters(bounds);
+            GameObject fractured = LibreFracture.LibreFracture.CreateFracturedCopyOf(original, parameters);
+            if (fractured == null) continue;
+
+            // Parent fractured GO under its source mesh object
+            fractured.transform.SetParent(original.transform, true);
+            fractured.name = k_Prefix + original.name;
+
+            // Chunk meshes only live in memory, so persist them or the prefab will lose them
+            PersistMeshes(fractured, meshDir, ref meshCounter);
+
+
+            var toggle = original.AddComponent<ToggleFractureMesh>();
+            original.AddComponent<MeshCollider>();
+            toggle.fracturedObject = fractured; // <-- adjust if your field is named differently
+
+            fracturedCount++;
         }
 
-        original.name = prefab.name;
-        if (!LibreFracture.LibreFracture.IsFracturable(original))
+        if (fracturedCount == 0)
         {
-            Debug.LogWarning($"[AutoFracture] {original.name} is not fracturable, skipping.");
-            Object.DestroyImmediate(original);
+            Object.DestroyImmediate(instance);
             return false;
         }
 
-        // Get bounds of child (world space, includes scale)
-        Bounds bounds = GetBounds(original);
+        // Set layer on everything in the prefab
+        int nonbroken = LayerMask.NameToLayer("Nonbroken");
+        if (nonbroken == -1)
+            Debug.LogWarning("[AutoFracture] Layer 'Nonbroken' not found, leaving layers unchanged.");
+        else
+            foreach (var t in instance.GetComponentsInChildren<Transform>(true))
+                t.gameObject.layer = nonbroken;
 
-        // Select child
-        Selection.activeGameObject = original;
-
-        // Fracture child based on bounds
-        var parameters = BuildParameters(bounds);
-        GameObject fractured = LibreFracture.LibreFracture.CreateFracturedCopyOf(original, parameters);
-
-        // Parent fractured GO under the original mesh
-        fractured.transform.SetParent(original.transform, true);
-        fractured.name = k_Prefix + original.name;
-
-        // Chunk meshes only live in memory, so persist them or the prefab will lose them
-        string meshDir = $"{k_MeshFolder}/{original.name}";
-        EnsureFolder(meshDir);
-        PersistMeshes(fractured, meshDir);
-
-        // Fractured version stays hidden until ToggleFractureMesh enables it
-        fractured.SetActive(false);
-
-        // Add ToggleFractureMesh component to original mesh with reference to fractured GO
-        var toggle = original.AddComponent<ToggleFractureMesh>();
-        toggle.fracturedObject = fractured; // <-- adjust if your field is named differently
-
-        // Prefab the original mesh with fractured GO as child, name to Fractured_<original name>
+        instance.name = k_Prefix + prefab.name;
         string outPath = AssetDatabase.GenerateUniqueAssetPath($"{k_OutputFolder}/{k_Prefix}{prefab.name}.prefab");
-        original.name = k_Prefix + prefab.name;
-        Transform[] allChildren = original.GetComponentsInChildren<Transform>(true);
+        
+        PrefabUtility.SaveAsPrefabAsset(instance, outPath);
 
-        foreach (Transform child in allChildren)
-        {
-            child.gameObject.layer = LayerMask.NameToLayer("Nonbroken");
-        }
-
-        PrefabUtility.SaveAsPrefabAsset(original, outPath);
-
-        Object.DestroyImmediate(original);
+        Object.DestroyImmediate(instance);
         return true;
     }
+
+    // Bounds of just this object's own renderer (not children, which may be separate meshes)
+    private static Bounds GetBounds(GameObject go)
+    {
+        var r = go.GetComponent<Renderer>();
+        return r != null ? r.bounds : new Bounds(go.transform.position, Vector3.one);
+    }
+
+    private static void PersistMeshes(GameObject root, string folder, ref int n)
+    {
+        foreach (var mf in root.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (mf.sharedMesh == null || EditorUtility.IsPersistent(mf.sharedMesh)) continue;
+            AssetDatabase.CreateAsset(mf.sharedMesh, $"{folder}/{mf.gameObject.name}_{n++}.asset");
+        }
+
+        // MeshColliders (including VHACD ones) may reference non-persistent meshes too
+        foreach (var mc in root.GetComponentsInChildren<MeshCollider>(true))
+        {
+            if (mc.sharedMesh == null || EditorUtility.IsPersistent(mc.sharedMesh)) continue;
+            AssetDatabase.CreateAsset(mc.sharedMesh, $"{folder}/{mc.gameObject.name}_col_{n++}.asset");
+        }
+    }
+
 
     // Tuning knobs for bounds-based fracturing
     private const float k_ChunksPerCubicUnit = 20f;
@@ -170,13 +201,7 @@ public static class AutoFracture
 
         return p;
     }
-
-    private static Bounds GetBounds(GameObject go)
-    {
-        var r = go.GetComponentInChildren<Renderer>();
-        return r != null ? r.bounds : new Bounds(go.transform.position, Vector3.one);
-    }
-
+ 
     private static void PersistMeshes(GameObject root, string folder)
     {
         int n = 0;
