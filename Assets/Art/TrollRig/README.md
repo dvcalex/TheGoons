@@ -20,3 +20,5 @@ Left thumbstick travels along the headset's forward/right plane, including up/do
 Y toggles the shared VR UI. B requests runtime tracking recenter and repositions the menu; support depends on the headset's tracking mode. These actions are provided by VrMenuPresenter in the normal startup flow.
 
 Tune reach, forward offset and movement on VrRigController. Tune force response on VrPhysicsHand.motor. The root uses unit scale; change these explicit reach settings instead of scaling the XR Origin hierarchy.
+
+Hands use 5x head-relative reach plus a 2.5 m forward offset, limited to 7 m from each shoulder. A controller 0.4 m ahead of your head requests roughly 4.5 m of forward reach. Both hands use the same mapping, so there are no mirrored lateral offsets that cross them.

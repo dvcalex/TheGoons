@@ -13,9 +13,9 @@ public sealed class VrRigController : MonoBehaviour
     public VrPidMotor headMotor = new VrPidMotor();
 
     [Header("Hand reach (world metres)")]
-    public float reachMultiplier = 3f;
-    public float forwardReach = 0.5f;
-    public float maximumReach = 4f;
+    public float reachMultiplier = 5f;
+    public float forwardReach = 2.5f;
+    public float maximumReach = 7f;
     public float shoulderWidth = 0.65f;
     public float shoulderDrop = 0.25f;
 
