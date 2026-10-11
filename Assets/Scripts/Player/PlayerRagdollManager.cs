@@ -22,10 +22,131 @@ public class PlayerRagdollManager : NetworkBehaviour
     [Header("State")]
     public bool isRagdoll = false;
     private Coroutine wakeCoroutine;
+    private PlayerMovement movement;
+    private Vector3 torsoOffset;
+    private bool capsuleWasEnabled;
+    private readonly NetworkVariable<RagdollState> ragdollState = new NetworkVariable<RagdollState>(
+        default(RagdollState), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    public struct RagdollState : INetworkSerializable
+    {
+        public bool active;
+        public Vector3 wakePosition;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref active);
+            serializer.SerializeValue(ref wakePosition);
+        }
+    }
+
+    public Rigidbody GrabBody
+    {
+        get
+        {
+            if (repositionPivot == null)
+            {
+                return null;
+            }
+
+            return repositionPivot.GetComponent<Rigidbody>();
+        }
+    }
+
+    private void Awake()
+    {
+        movement = GetComponentInParent<Player>()._movement;
+    }
 
     private void Start()
     {
-        ragdollObj.SetActive(false);
+        if (!isRagdoll)
+        {
+            ragdollObj.SetActive(false);
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        ragdollState.OnValueChanged += RagdollChanged;
+        if (ragdollState.Value.active)
+        {
+            EnableRagdoll();
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        ragdollState.OnValueChanged -= RagdollChanged;
+    }
+
+    // GrabState already tells every client when to enable the ragdoll.
+    public void BeginGrabRagdoll()
+    {
+        if (wakeCoroutine != null)
+        {
+            StopCoroutine(wakeCoroutine);
+            wakeCoroutine = null;
+            ragdollRigData._currentLerpData = null;
+            ragdollRigData.SetRigidbodyStates(true);
+            GrabBody.isKinematic = !IsOwner;
+        }
+
+        EnableRagdoll();
+        if (IsSpawned && IsOwner)
+        {
+            ragdollState.Value = new RagdollState { active = true };
+        }
+    }
+
+    public void SetReleaseVelocity(Vector3 velocity)
+    {
+        foreach (Transform bone in ragdollRigData.rigData)
+        {
+            var body = bone.GetComponent<Rigidbody>();
+            if (body != null && !body.isKinematic)
+            {
+                body.linearVelocity = velocity;
+            }
+        }
+    }
+
+    public void SupportGrabbedLimbs()
+    {
+        float supportedMass = 0f;
+        foreach (Transform bone in ragdollRigData.rigData)
+        {
+            var body = bone.GetComponent<Rigidbody>();
+            if (body != null && body != GrabBody && !body.isKinematic && body.useGravity)
+            {
+                supportedMass += body.mass;
+            }
+        }
+
+        // The torso motor cancels its own gravity; it also carries the hanging limbs.
+        GrabBody.AddForce(-Physics.gravity * supportedMass, ForceMode.Force);
+    }
+
+    private void FixedUpdate()
+    {
+        if (!IsOwner || !isRagdoll || wakeCoroutine != null)
+        {
+            return;
+        }
+
+        FollowMovementBody();
+    }
+
+    private void FollowMovementBody()
+    {
+        // Keep the existing player position stream with the torso, without moving its bones.
+        Vector3 ragdollPosition = ragdollRigData.transform.position;
+        Quaternion ragdollRotation = ragdollRigData.transform.rotation;
+        movement.rb.position = repositionPivot.position - torsoOffset;
+        // The torso supplies motion. The hidden capsule must not integrate it a second time.
+        movement.rb.linearVelocity = Vector3.zero;
+        movement.rb.angularVelocity = Vector3.zero;
+        ragdollRigData.transform.SetPositionAndRotation(ragdollPosition, ragdollRotation);
     }
 
     public void SetRagdoll(bool state)
@@ -46,31 +167,56 @@ public class PlayerRagdollManager : NetworkBehaviour
             return;
         }
 
-        Vector3 wakePosition = state ? Vector3.zero : repositionPivot.position;
-        SetRagdoll_RPC(state, wakePosition);
+        Vector3 wakePosition = Vector3.zero;
+        if (!state)
+        {
+            wakePosition = repositionPivot.position - torsoOffset;
+        }
+
+        ragdollState.Value = new RagdollState
+        {
+            active = state,
+            wakePosition = wakePosition
+        };
     }
 
-    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Owner)]
-    public void SetRagdoll_RPC(bool state, Vector3 wakePosition)
+    private void RagdollChanged(RagdollState previous, RagdollState current)
     {
+        if (!current.active && movement.IsGrabbed)
+        {
+            return;
+        }
+
         if (wakeCoroutine != null)
         {
             StopCoroutine(wakeCoroutine);
             wakeCoroutine = null;
+            if (current.active)
+            {
+                ragdollRigData._currentLerpData = null;
+                ragdollRigData.SetRigidbodyStates(true);
+                GrabBody.isKinematic = !IsOwner;
+            }
         }
 
-        if (state)
+        if (current.active)
         {
             EnableRagdoll();
         }
         else
         {
-            DisableRagdoll(wakePosition);
+            DisableRagdoll(current.wakePosition);
         }
     }
 
     private void EnableRagdoll()
     {
+        if (isRagdoll)
+        {
+            return;
+        }
+
+        ragdollRigData._currentLerpData = null;
         // Position the ragdoll at the player's current position.
         ragdollRigData.transform.SetPositionAndRotation(root.position, root.rotation);
 
@@ -85,6 +231,17 @@ public class PlayerRagdollManager : NetworkBehaviour
 
         // Copy the player's current pose.
         ragdollRigData.SyncRig(playerRigData);
+        ragdollRigData.SetRigidbodyStates(true);
+        if (IsSpawned)
+        {
+            // The torso's existing NetworkTransform stays owner-authoritative.
+            GrabBody.isKinematic = !IsOwner;
+        }
+        torsoOffset = repositionPivot.position - root.position;
+        capsuleWasEnabled = movement.capsule.enabled;
+        movement.capsule.enabled = false;
+        movement.ClearGrabMovement();
+        SetReleaseVelocity(movement.rb.linearVelocity);
         isRagdoll = true;
 
         // Only disable the camera belonging to this client.
@@ -132,6 +289,7 @@ public class PlayerRagdollManager : NetworkBehaviour
         // Reset the ragdoll rig to match the player.
         ragdollRigData.SyncRig(playerRigData);
         isRagdoll = false;
+        movement.capsule.enabled = capsuleWasEnabled;
 
         // Only reactivate the local player's camera.
         if (IsOwner && defaultCam != null)

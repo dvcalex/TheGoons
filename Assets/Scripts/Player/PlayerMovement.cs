@@ -132,7 +132,7 @@ public class PlayerMovement : NetworkBehaviour
     {
         get
         {
-            return IsOwner && _player != null && !IsGrabbed;
+            return IsOwner && _player != null && !IsGrabbed && !_player._ragdollManager.isRagdoll;
         }
     }
 
@@ -366,7 +366,7 @@ public class PlayerMovement : NetworkBehaviour
             ApplyRemotePose(1f - Mathf.Exp(-30f * Time.fixedDeltaTime));
         }
 
-        if (IsOwner && IsGrabbed)
+        if (IsOwner && (IsGrabbed || _player._ragdollManager.isRagdoll))
         {
             PublishPoseIfNeeded(Time.fixedDeltaTime);
             return;

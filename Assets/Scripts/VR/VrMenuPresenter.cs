@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Controls;
-using UnityEngine.InputSystem.XR;
 using UnityEngine.XR;
 
 /// <summary>Local pre-connection tracking and shared-menu presentation; no network player is spawned for the menu.</summary>
@@ -43,11 +40,14 @@ public sealed class VrMenuPresenter : MonoBehaviour
     private bool positioned;
     private int placementDelay;
     private bool[] desktopControlStates;
+    private readonly List<SharedWorldSpaceCanvas> gameplayPanels = new List<SharedWorldSpaceCanvas>();
     private readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
     private readonly List<XRInputSubsystem> trackingSubsystems = new List<XRInputSubsystem>();
 
     private IEnumerator Start()
     {
+        GameManager.InstanceChanged += BindGameplayPanels;
+
         // Let RelayManager initialize its desktop screens first.
         yield return null;
         while (enabled)
@@ -156,6 +156,7 @@ public sealed class VrMenuPresenter : MonoBehaviour
             }
         }
 
+        BindGameplayPanels(GameManager._instance);
         positioned = false;
         placementDelay = 2;
     }
@@ -180,6 +181,36 @@ public sealed class VrMenuPresenter : MonoBehaviour
 
         CurrentOrigin = origin;
         BindOrigin(origin);
+    }
+
+    private void BindGameplayPanels(GameManager game)
+    {
+        if (!IsVr || CurrentOrigin == null || game == null)
+        {
+            return;
+        }
+
+        foreach (var canvas in game.GetComponentsInChildren<Canvas>(true))
+        {
+            if (!canvas.isRootCanvas)
+            {
+                continue;
+            }
+
+            var panel = canvas.GetComponent<SharedWorldSpaceCanvas>();
+            if (panel == null)
+            {
+                panel = canvas.gameObject.AddComponent<SharedWorldSpaceCanvas>();
+            }
+
+            if (!gameplayPanels.Contains(panel))
+            {
+                gameplayPanels.Add(panel);
+            }
+
+            panel.Present(CurrentOrigin.Camera);
+            panel.SetVisible(menuVisible);
+        }
     }
 
     private void LateUpdate()
@@ -209,11 +240,12 @@ public sealed class VrMenuPresenter : MonoBehaviour
             positioned = true;
         }
 
-        var left = XRController.leftHand?.TryGetChildControl<ButtonControl>("secondaryButton");
-        var right = XRController.rightHand?.TryGetChildControl<ButtonControl>("secondaryButton");
-        bool togglePressed = left != null && left.isPressed;
-        bool held = right != null && right.isPressed;
-        if (Application.isFocused && headReady && togglePressed && !toggleHeld)
+        var left = UnityEngine.XR.InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);
+        var right = UnityEngine.XR.InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
+        left.TryGetFeatureValue(UnityEngine.XR.CommonUsages.secondaryButton, out bool togglePressed);
+        right.TryGetFeatureValue(UnityEngine.XR.CommonUsages.secondaryButton, out bool held);
+
+        if (Application.isFocused && togglePressed && !toggleHeld)
         {
             ToggleMenu();
         }
@@ -225,6 +257,34 @@ public sealed class VrMenuPresenter : MonoBehaviour
 
         toggleHeld = togglePressed;
         recenterHeld = held;
+
+        UpdatePanelVisibility();
+    }
+
+    private void UpdatePanelVisibility()
+    {
+        var manager = NetworkManager.Singleton;
+        bool connected = manager != null && manager.IsListening;
+        gameplayPanels.RemoveAll(panel => panel == null);
+
+        // The gameplay panel replaces the connection screen once a session starts.
+        foreach (var panel in panels)
+        {
+            if (panel != null)
+            {
+                panel.SetVisible(menuVisible && (!connected || gameplayPanels.Count == 0));
+            }
+        }
+
+        foreach (var panel in gameplayPanels)
+        {
+            panel.SetVisible(menuVisible && connected);
+        }
+
+        if (relay.lobbyCodeDisplay != null)
+        {
+            relay.lobbyCodeDisplay.gameObject.SetActive(connected);
+        }
     }
 
     public void ToggleMenu()
@@ -235,13 +295,7 @@ public sealed class VrMenuPresenter : MonoBehaviour
         }
 
         menuVisible = !menuVisible;
-        foreach (var panel in panels)
-        {
-            if (panel != null)
-            {
-                panel.SetVisible(menuVisible);
-            }
-        }
+        UpdatePanelVisibility();
 
         if (menuVisible)
         {
@@ -286,6 +340,14 @@ public sealed class VrMenuPresenter : MonoBehaviour
                 panel.Recenter();
             }
         }
+
+        foreach (var panel in gameplayPanels)
+        {
+            if (panel != null)
+            {
+                panel.Recenter();
+            }
+        }
     }
 
     private void OnDisable()
@@ -312,6 +374,16 @@ public sealed class VrMenuPresenter : MonoBehaviour
             }
         }
 
+        foreach (var panel in gameplayPanels)
+        {
+            if (panel != null)
+            {
+                panel.RestoreDesktop();
+            }
+        }
+
+        gameplayPanels.Clear();
+
         if (menuOrigin != null)
         {
             Destroy(menuOrigin.gameObject);
@@ -334,5 +406,10 @@ public sealed class VrMenuPresenter : MonoBehaviour
                 desktopOnlyControls[i].SetActive(desktopControlStates[i]);
             }
         }
+    }
+
+    private void OnDestroy()
+    {
+        GameManager.InstanceChanged -= BindGameplayPanels;
     }
 }
