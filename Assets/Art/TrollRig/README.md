@@ -1,5 +1,13 @@
 # TrollRig
 
+## Testing without VR input
+
+VRTest contains a Physics Test Pose object with RigPhysicsTestPose. It supplies valid stationary head/hand targets to the existing motors and disables thumbstick travel for this test. In Play mode, expand TrollRig's TrackingFloor and move/rotate the generated Test targets in the Scene view to exercise tracking and contacts. Targets start at the authored physical poses and move with the tracking floor. Disable Physics Test Pose to release the motors and restore device input. Host_Player does not include this test driver.
+
+Without this driver or tracked controllers, PilotPoseStream reports invalid tracking and ServoLimb deliberately releases its drives and gravity support. Hanging arms in that state do not indicate insufficient motor strength.
+
+VRTest includes Physics Test Ground, a solid 40 m platform with its top at y=0, supporting the gravity-driven chassis. In Play mode use the Scene view, select a generated Test target under TrackingFloor, press W to move or E to rotate it, and drag the gizmo. Move targets rather than the physical fists. The test driver holds the pose automatically; keyboard/gamepad locomotion is not enabled in this test.
+
 Drag `Assets/Prefabs/TrollRig.prefab` into a test scene. This is the assembled VR rig prefab: troll head, both visual arms and hands, and the existing physics, input, grabbing, and IK components. Use this prefab as the integration target for Host_Player. Its source models, materials, and tuning profiles remain shared asset dependencies.
 
 The upper arms and forearms are tapered capsule meshes. They are children of the existing visual arm bones, driven by HumanoidArmIK. Mirrored curled hands are children of the physical fists. Fingers are fixed geometry, not individually animated. No new runtime scripts or colliders are required.
@@ -32,13 +40,19 @@ Profiles/TrollArms3x.asset is the rig-level profile. Left and Right profiles hav
 
 Linear target/speed and servo force caps are 3x; angular servo/guide torque and angular limit springs/damping are 9x to account for the larger lever arms and inertia. Grab search and break distances are enlarged. Body/limb masses, damage, maximum grabbable mass, and throw caps retain the existing gameplay values; this is not a 27x density/mass scaling. Body locomotion speed caps remain unchanged.
 
+The three TrollArms3x profiles enable responsiveArmDrives. Wrist position and rotation use ConfigurableJoint acceleration drives: PhysX accounts for effective mass/inertia rather than relying on our estimate of the articulated arm. Spring coefficients are per unit mass in this mode. Force/torque limits scale upward with actual arm and supported object mass relative to the authored arm mass, retaining bounded drives and impact recovery. Gravity support remains active while tracking is valid. Other profiles retain the original force drives.
+
+All arm rigidbodies now receive the configured solver settings; TrollRig uses 24 position and 8 velocity iterations. Structural wrist joints allow free angular motion so the wrist rotation servo can match the controller without fighting the old 80-degree wrist limits. Shoulder/elbow limits, physical reach, collision response, and tracking-loss release remain in place. Hands can still be blocked by the environment or an unreachable target; these changes do not teleport them through obstacles.
+
+Responsive drive validation: C# compilation and prefab/profile references checked. Holding the arms out, moving quickly, gripping a weighted prop and recovering from contact still require headset play-mode testing.
+
 Validated: joint alignment, 3x physical/visual lengths, non-overlapping rest fists, floor clearance, controller mapping under head translation, and unit tracking/root scales. An editor-only isolated physics attempt did not establish stable runtime tracking and also failed on the unmodified baseline rig; do not treat it as a passed play-mode test. Live desktop/VR motion, grabs and contact recovery still need play-mode validation.
 
 ## Physics travel and tracking
 
-Left thumbstick moves horizontally relative to the headset. ThumbstickSlewMotor on TrollRig requests forces through HullMotor: default speed 2 m/s, acceleration 3 m/s², braking 4 m/s², response 0.35 seconds, deadzone 0.2. Diagonal input has the same speed cap. Release the stick to brake. After losing tracking or pausing, release it before travel can resume. Looking directly up or down falls back to tracking-space forward.
+Left thumbstick moves along the headset's forward/right plane, including pitch: look up and push forward to climb, or look down to descend. ThumbstickSlewMotor on TrollRig requests forces through HullMotor: default speed 2 m/s, acceleration 3 m/s², braking 4 m/s², response 0.35 seconds, deadzone 0.2. Diagonal input has the same speed cap. Release the stick to brake in all three axes and hold altitude. After losing tracking or pausing, release it before travel can resume.
 
-Chassis remains the grounded transport capsule. Its TrollTravel physics material removes ground friction so gentle acceleration does not stick against the floor. Gravity and collisions still apply; this is horizontal travel, not flight. TrackingRootFollower carries the camera with the chassis while room-scale head motion stays one-to-one. The separate physical head follows that tracked pose, so head movement never feeds itself back into the camera origin. Head collision does not forcibly move the user's camera away from their tracked position.
+Chassis remains the physical transport capsule. Its TrollTravel physics material removes ground friction so gentle acceleration does not stick against the floor. While slewing is armed with valid tracking, the motor compensates for chassis gravity with force so it can travel vertically. Tracking loss or hand-based pulling releases that support. Collisions still apply. TrackingRootFollower carries the camera with the chassis while room-scale head motion stays one-to-one. The separate physical head follows that tracked pose, so head movement never feeds itself back into the camera origin. Head collision does not forcibly move the user's camera away from their tracked position.
 
 SurfacePullMotor takes priority while an arm is planted. Thumbstick braking resumes when it releases. Existing grip, strike, throw and contact effects remain available.
 
