@@ -174606,6 +174606,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6430318637315127836}
+  - component: {fileID: 8307637521418384631}
+  - component: {fileID: 4054270198578363507}
   m_Layer: 9
   m_Name: Fractured_EA03_Town_House_Comp_03a_PRE
   m_TagString: Untagged
@@ -174650,6 +174652,48 @@ Transform:
   - {fileID: 8099097788649804690}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8307637521418384631
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9177992402850710801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1275029516
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &4054270198578363507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9177992402850710801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 018562c663580e64cb540d9e3c8ef442, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkFractureMesh
+  ShowTopMostFoldoutHeaderGroup: 1
+  registry: []
+  trackedChunks: 
 --- !u!1 &9187850129699338994
 GameObject:
   m_ObjectHideFlags: 0
