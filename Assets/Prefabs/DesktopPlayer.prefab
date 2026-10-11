@@ -1279,6 +1279,7 @@ GameObject:
   - component: {fileID: 1493577486062206776}
   - component: {fileID: 2947696790774383646}
   - component: {fileID: 5253568588033088183}
+  - component: {fileID: 6682488784017686635}
   m_Layer: 6
   m_Name: DesktopPlayer
   m_TagString: Player
@@ -1437,6 +1438,27 @@ MonoBehaviour:
   readyColor: {r: 1, g: 1, b: 1, a: 1}
   activeColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   cooldownColor: {r: 0.4, g: 0.4, b: 0.4, a: 1}
+--- !u!114 &6682488784017686635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2879056952290516124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d95ef75968a10af47bceff586224e95e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerGrab
+  ShowTopMostFoldoutHeaderGroup: 1
+  maximumThrowSpeed: 25
+  followMotor:
+    positionGain: 90
+    positionDamping: 18
+    rotationGain: 65
+    rotationDamping: 14
+    maximumAcceleration: 120
+    maximumAngularAcceleration: 100
 --- !u!1 &3884174243079486961
 GameObject:
   m_ObjectHideFlags: 0

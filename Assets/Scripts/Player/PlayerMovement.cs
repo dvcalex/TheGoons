@@ -132,7 +132,15 @@ public class PlayerMovement : NetworkBehaviour
     {
         get
         {
-            return IsOwner && _player != null;
+            return IsOwner && _player != null && !IsGrabbed;
+        }
+    }
+
+    public bool IsGrabbed
+    {
+        get
+        {
+            return grab != null && grab.IsHeld;
         }
     }
 
@@ -140,7 +148,12 @@ public class PlayerMovement : NetworkBehaviour
     {
         get
         {
-            return HasControl && mouseLook != null ? mouseLook.Pitch : remotePitch;
+            if (IsOwner && mouseLook != null)
+            {
+                return mouseLook.Pitch;
+            }
+
+            return remotePitch;
         }
     }
 
@@ -243,12 +256,14 @@ public class PlayerMovement : NetworkBehaviour
     private InputAction runAction;
     private InputAction jumpAction;
     private DesktopRagdoll ragdoll;
+    private PlayerGrab grab;
 
     private void Awake()
     {
         rb = rb != null ? rb : GetComponent<Rigidbody>();
         capsule = capsule != null ? capsule : GetComponent<CapsuleCollider>();
         ragdoll = GetComponent<DesktopRagdoll>();
+        grab = GetComponentInParent<PlayerGrab>();
         rb.useGravity = false;
 
         // Stable locomotion body; the attached ragdoll supplies the wobble.
@@ -345,6 +360,12 @@ public class PlayerMovement : NetworkBehaviour
             ApplyRemotePose(1f - Mathf.Exp(-30f * Time.fixedDeltaTime));
         }
 
+        if (IsOwner && IsGrabbed)
+        {
+            PublishPoseIfNeeded(Time.fixedDeltaTime);
+            return;
+        }
+
         if (!HasControl || rb.isKinematic)
         {
             return;
@@ -397,6 +418,11 @@ public class PlayerMovement : NetworkBehaviour
             mouseLook.SetZoom(mouseLook.defaultFOV + movementFOV + currentDashFOV);
         }
 
+        PublishPoseIfNeeded(dt);
+    }
+
+    private void PublishPoseIfNeeded(float dt)
+    {
         if (IsSpawned)
         {
             float yaw = rb.rotation.eulerAngles.y;
@@ -771,6 +797,23 @@ public class PlayerMovement : NetworkBehaviour
         isGrounded = false;
         GroundVelocity = Vector3.zero;
         Physics.SyncTransforms();
+    }
+
+    public void ClearGrabMovement()
+    {
+        moveInput = Vector2.zero;
+        walking = running = isMoving = false;
+        jumpBufferLeft = coyoteLeft = dashTimer = 0f;
+        isGrounded = false;
+        GroundVelocity = Vector3.zero;
+        currentAnimationSpeed = desiredAnimationSpeed = 0f;
+        if (anim != null)
+        {
+            anim.SetFloat("Speed", 0f);
+        }
+
+        _knockbacks.Clear();
+        servo.Reset();
     }
 
     public void SetLock(bool state)

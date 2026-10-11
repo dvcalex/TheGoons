@@ -1,6 +1,6 @@
 # TrollRig
 
-Use `Assets/Prefabs/Host_Player.prefab` for the networked VR host. Its owner enables the nested `Assets/Prefabs/TrollRig.prefab` and binds the XR tracking space. Remote players still receive the same three head/hand poses.
+Use `Assets/Prefabs/Host_Player.prefab` for the networked VR host. Its owner enables the nested `Assets/Prefabs/TrollRig.prefab` and binds the XR tracking space. Remote players render the real head and Scout arms from three head/hand poses and two byte-sized grip values. Their XR Origin, motors, colliders and contact effects stay disabled; the arm solver stays active.
 
 ## Runtime
 
@@ -47,3 +47,11 @@ Mesh geometry, arm bones, colliders, local palm anchors and tracked poses inheri
 Body masses and maximum grabbable mass intentionally retain their gameplay tuning; scaling does not apply a 1728x density-based mass increase. Grab break force scales linearly with acceleration and break torque quadratically with acceleration and lever length. Unity recalculates automatic inertia from the enlarged colliders. Gravity stays at the world's gravity.
 
 Uniform root scaling is required: nonuniform or negative scale is not supported. Unity's Transform alone cannot scale scripted world-space distances, which is why those values explicitly read the rig's scale. No additional editor component is required.
+
+## Networked desktop grabs
+
+DesktopPlayer has a `PlayerGrab` component on its network root. The VR host selects nearby Player-layer capsules, including kinematic network replicas. It replicates the holding hand and attachment offset once when a grab starts, then releases with a capped throw velocity. A second hand cannot take an already held player. Tracking loss, hand disable or host despawn releases the grab.
+
+The desktop owner keeps authority over its movement body. While held, a PID motor follows the existing replicated hand pose; walking, jumping, dashing and manual ragdoll toggles stop. The player can still look around, and world collisions remain active. Its existing NetworkTransform replicates movement to everyone else. This avoids an ownership handoff, a networked joint, and another continuous pose stream. Network latency can add some follow lag. Already-ragdolled players are not grabbable by this capsule-based system.
+
+Host hand impacts also send a capped knockback to the desktop owner. `Maximum Throw Speed` on PlayerGrab limits both throws and hits (25 m/s by default). Grabbing uses the hands' existing Grabbable Layers mask, which includes Player. Both host and clients must use the updated scripts and DesktopPlayer prefab.

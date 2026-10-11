@@ -17,6 +17,8 @@ public sealed class LocalVrPlayer : NetworkBehaviour
         public Quaternion headRotation;
         public Quaternion leftRotation;
         public Quaternion rightRotation;
+        public byte leftGrip;
+        public byte rightGrip;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer)
             where T : IReaderWriter
@@ -27,6 +29,8 @@ public sealed class LocalVrPlayer : NetworkBehaviour
             serializer.SerializeValue(ref headRotation);
             serializer.SerializeValue(ref leftRotation);
             serializer.SerializeValue(ref rightRotation);
+            serializer.SerializeValue(ref leftGrip);
+            serializer.SerializeValue(ref rightGrip);
         }
     }
 
@@ -39,7 +43,7 @@ public sealed class LocalVrPlayer : NetworkBehaviour
     private Transform left;
     private Transform right;
     private Transform head;
-    private Transform[] remote;
+    private VrRigController rig;
     private float nextSend;
     private bool received;
 
@@ -58,83 +62,100 @@ public sealed class LocalVrPlayer : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (origin == null)
+        if (origin == null || trollRig == null)
         {
             return;
         }
 
-        // The local physics rig and tracking share the player's ownership lifecycle.
-        if (localHeadVisual != null && IsOwner)
+        received = false;
+        rig = trollRig.GetComponent<VrRigController>();
+        head = rig.physicalHead.transform;
+        left = rig.leftHand.transform;
+        right = rig.rightHand.transform;
+
+        if (localHeadVisual != null)
         {
-            localHeadVisual.gameObject.SetActive(false);
+            localHeadVisual.gameObject.SetActive(!IsOwner);
         }
 
         origin.gameObject.SetActive(IsOwner);
 
-        if (trollRig != null)
+        if (IsOwner)
         {
-            trollRig.SetActive(IsOwner);
+            trollRig.SetActive(true);
+            rig.BindTracking(origin.CameraFloorOffsetObject.transform);
         }
-
-        var offset = origin.CameraFloorOffsetObject.transform;
-        left = offset.Find("Left Controller");
-        right = offset.Find("Right Controller");
-        head = origin.Camera.transform;
-
-        if (IsOwner && trollRig != null)
+        else
         {
-            var rig = trollRig.GetComponent<VrRigController>();
-            if (rig != null)
-            {
-                rig.BindTracking(offset);
-                head = rig.physicalHead.transform;
-                left = rig.leftHand.transform;
-                right = rig.rightHand.transform;
-            }
-        }
-
-        if (!IsOwner)
-        {
-            remote = new Transform[3];
-            remote[0] = CreateMarker("VR Head", PrimitiveType.Sphere, new Vector3(.22f, .26f, .22f));
-            remote[1] = CreateMarker("VR Left Hand", PrimitiveType.Cube, Vector3.one * .16f);
-            remote[2] = CreateMarker("VR Right Hand", PrimitiveType.Cube, Vector3.one * .16f);
+            PrepareRemoteRig();
             pose.OnValueChanged += PoseChanged;
             PoseChanged(default(RigPose), pose.Value);
         }
     }
 
-    private Transform CreateMarker(string label, PrimitiveType type, Vector3 size)
+    public VrPhysicsHand GetHand(bool leftSide)
     {
-        var marker = GameObject.CreatePrimitive(type);
-        marker.name = label;
-        marker.transform.SetParent(transform, false);
-        float rigScale = 1f;
-        if (trollRig != null)
+        if (rig == null)
         {
-            rigScale = Mathf.Abs(trollRig.transform.localScale.x);
+            return null;
         }
 
-        marker.transform.localScale = size * rigScale;
-        // Host physics handles gameplay contacts; remote markers are presentation only.
-        var collider = marker.GetComponent<Collider>();
-        collider.enabled = false;
-        Destroy(collider);
-        return marker.transform;
+        if (leftSide)
+        {
+            return rig.leftHand;
+        }
+
+        return rig.rightHand;
+    }
+
+    private void PrepareRemoteRig()
+    {
+        // Keep the visual arm solver active, but never run remote input or physics.
+        rig.enabled = false;
+        rig.leftHand.enabled = false;
+        rig.rightHand.enabled = false;
+
+        foreach (var effects in trollRig.GetComponentsInChildren<TrollPresentation.TrollContactEffects>(true))
+        {
+            effects.enabled = false;
+        }
+
+        foreach (var collider in trollRig.GetComponentsInChildren<Collider>(true))
+        {
+            collider.enabled = false;
+        }
+
+        foreach (var body in trollRig.GetComponentsInChildren<Rigidbody>(true))
+        {
+            body.collisionDetectionMode = CollisionDetectionMode.Discrete;
+            body.isKinematic = true;
+            body.detectCollisions = false;
+        }
+
+        // The chassis is a local locomotion body, not part of the visible avatar.
+        rig.chassis.gameObject.SetActive(false);
+        trollRig.SetActive(true);
+
+        // Received poses already interpolate here; Rigidbody interpolation would fight them.
+        foreach (var body in trollRig.GetComponentsInChildren<Rigidbody>(true))
+        {
+            body.interpolation = RigidbodyInterpolation.None;
+        }
     }
 
     private void PoseChanged(RigPose previous, RigPose current)
     {
-        if (remote == null)
+        if (rig == null)
         {
             return;
         }
 
         if (!received)
         {
-            remote[0].SetPositionAndRotation(current.head, current.headRotation);
-            remote[1].SetPositionAndRotation(current.left, current.leftRotation);
-            remote[2].SetPositionAndRotation(current.right, current.rightRotation);
+            head.SetPositionAndRotation(current.head, current.headRotation);
+            left.SetPositionAndRotation(current.left, current.leftRotation);
+            right.SetPositionAndRotation(current.right, current.rightRotation);
+            UpdateRemoteVisuals(current);
             received = true;
         }
     }
@@ -156,17 +177,27 @@ public sealed class LocalVrPlayer : NetworkBehaviour
                 left = left.position,
                 leftRotation = left.rotation,
                 right = right.position,
-                rightRotation = right.rotation
+                rightRotation = right.rotation,
+                leftGrip = (byte)Mathf.RoundToInt(rig.leftHand.Grip * 255f),
+                rightGrip = (byte)Mathf.RoundToInt(rig.rightHand.Grip * 255f)
             };
         }
-        else if (!IsOwner && remote != null)
+        else if (!IsOwner && rig != null)
         {
             var current = pose.Value;
             float t = 1f - Mathf.Exp(-20f * Time.unscaledDeltaTime);
-            Move(remote[0], current.head, current.headRotation, t);
-            Move(remote[1], current.left, current.leftRotation, t);
-            Move(remote[2], current.right, current.rightRotation, t);
+            Move(head, current.head, current.headRotation, t);
+            Move(left, current.left, current.leftRotation, t);
+            Move(right, current.right, current.rightRotation, t);
+            UpdateRemoteVisuals(current);
         }
+    }
+
+    private void UpdateRemoteVisuals(RigPose current)
+    {
+        rig.UpdateFacing(head.rotation);
+        rig.leftHand.SetVisualGrip(current.leftGrip / 255f);
+        rig.rightHand.SetVisualGrip(current.rightGrip / 255f);
     }
 
     private static void Move(Transform target, Vector3 position, Quaternion rotation, float t)

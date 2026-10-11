@@ -35,6 +35,12 @@ public class PlayerRagdollManager : NetworkBehaviour
             return;
         }
 
+        var player = GetComponentInParent<Player>();
+        if (player != null && player._movement.IsGrabbed)
+        {
+            return;
+        }
+
         if (isRagdoll == state)
         {
             return;

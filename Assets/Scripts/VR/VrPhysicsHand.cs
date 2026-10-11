@@ -57,11 +57,17 @@ public sealed class VrPhysicsHand : MonoBehaviour
     private bool gripReleased;
     private FixedJoint grabJoint;
     private Rigidbody heldBody;
+    private PlayerGrab heldPlayer;
     private readonly Collider[] candidates = new Collider[24];
 
     private void Awake()
     {
         Body = GetComponent<Rigidbody>();
+        if (!enabled)
+        {
+            return;
+        }
+
         Body.interpolation = RigidbodyInterpolation.Interpolate;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         Body.solverIterations = 12;
@@ -69,6 +75,12 @@ public sealed class VrPhysicsHand : MonoBehaviour
         Body.maxAngularVelocity = 25f;
         Body.maxLinearVelocity = Mathf.Max(Body.maxLinearVelocity, maximumSpeed * WorldScale);
         Body.maxDepenetrationVelocity = Physics.defaultMaxDepenetrationVelocity * WorldScale;
+    }
+
+    // Remote fingers animate without enabling tracking, grabbing or the motor.
+    public void SetVisualGrip(float grip)
+    {
+        Grip = Mathf.Clamp01(grip);
     }
 
     public void SetTarget(Vector3 position, Quaternion rotation, float grip, bool tracked)
@@ -121,7 +133,7 @@ public sealed class VrPhysicsHand : MonoBehaviour
 
     private void TryGrab()
     {
-        if (grabJoint != null)
+        if (grabJoint != null || heldPlayer != null)
         {
             return;
         }
@@ -130,19 +142,26 @@ public sealed class VrPhysicsHand : MonoBehaviour
         int count = Physics.OverlapSphereNonAlloc(palm, grabRadius * WorldScale, candidates, grabbableLayers, QueryTriggerInteraction.Ignore);
         float nearestDistance = float.PositiveInfinity;
         Rigidbody nearest = null;
+        PlayerGrab nearestPlayer = null;
         Vector3 contactPoint = palm;
         for (int i = 0; i < count; i++)
         {
             Rigidbody candidate = candidates[i].attachedRigidbody;
-            if (candidate == null || candidate.isKinematic || candidate.mass > maximumGrabMass
-                || candidate.transform.IsChildOf(transform.root))
+            if (candidate == null || candidate.transform.IsChildOf(transform.root))
             {
                 continue;
             }
 
-            // One hand owns a prop at a time; do not create competing grab joints.
-            var existingJoint = candidate.GetComponent<FixedJoint>();
-            if (existingJoint != null)
+            var player = candidate.GetComponentInParent<PlayerGrab>();
+            if (player != null)
+            {
+                // Network replicas are kinematic; the owner will move this player.
+                if (!player.CanGrab(this))
+                {
+                    continue;
+                }
+            }
+            else if (candidate.isKinematic || candidate.mass > maximumGrabMass || candidate.GetComponent<FixedJoint>() != null)
             {
                 continue;
             }
@@ -153,12 +172,23 @@ public sealed class VrPhysicsHand : MonoBehaviour
             {
                 nearestDistance = distance;
                 nearest = candidate;
+                nearestPlayer = player;
                 contactPoint = point;
             }
         }
 
         if (nearest == null)
         {
+            return;
+        }
+
+        if (nearestPlayer != null)
+        {
+            if (nearestPlayer.BeginGrab(this))
+            {
+                heldPlayer = nearestPlayer;
+            }
+
             return;
         }
 
@@ -175,6 +205,12 @@ public sealed class VrPhysicsHand : MonoBehaviour
 
     private void Release()
     {
+        if (heldPlayer != null)
+        {
+            heldPlayer.EndGrab(this);
+            heldPlayer = null;
+        }
+
         if (grabJoint != null)
         {
             Destroy(grabJoint);
@@ -182,6 +218,21 @@ public sealed class VrPhysicsHand : MonoBehaviour
         }
 
         heldBody = null;
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (!Tracked || collision.rigidbody == null || collision.contactCount == 0)
+        {
+            return;
+        }
+
+        var player = collision.rigidbody.GetComponentInParent<PlayerGrab>();
+        if (player != null)
+        {
+            Vector3 direction = -collision.GetContact(0).normal;
+            player.Hit(direction * collision.relativeVelocity.magnitude);
+        }
     }
 
     private void OnDisable()

@@ -57,6 +57,11 @@ public sealed class VrRigController : MonoBehaviour
 
     private void Awake()
     {
+        if (!enabled)
+        {
+            return;
+        }
+
         chassis.constraints = RigidbodyConstraints.FreezeRotation;
         chassis.interpolation = RigidbodyInterpolation.Interpolate;
         chassis.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
@@ -112,11 +117,7 @@ public sealed class VrRigController : MonoBehaviour
 
         headTracked = true;
         Quaternion worldRotation = trackingSpace.rotation * headRotation;
-        Vector3 forward = Vector3.ProjectOnPlane(worldRotation * Vector3.forward, Vector3.up);
-        if (forward.sqrMagnitude > 0.001f)
-        {
-            Facing = Quaternion.LookRotation(forward, Vector3.up);
-        }
+        UpdateFacing(worldRotation);
 
         headAuthority = Mathf.MoveTowards(headAuthority, 1f, Time.fixedDeltaTime / 0.12f);
         headMotor.Drive(physicalHead, trackingSpace.TransformPoint(headPosition), worldRotation, headAuthority, WorldScale);
@@ -124,6 +125,15 @@ public sealed class VrRigController : MonoBehaviour
         DriveHand(leftHand, leftDevice, UnityEngine.InputSystem.XR.XRController.leftHand, -1f);
         DriveHand(rightHand, InputDevices.GetDeviceAtXRNode(XRNode.RightHand), UnityEngine.InputSystem.XR.XRController.rightHand, 1f);
         Travel(leftDevice, worldRotation);
+    }
+
+    public void UpdateFacing(Quaternion rotation)
+    {
+        Vector3 forward = Vector3.ProjectOnPlane(rotation * Vector3.forward, Vector3.up);
+        if (forward.sqrMagnitude > 0.001f)
+        {
+            Facing = Quaternion.LookRotation(forward, Vector3.up);
+        }
     }
 
     private void FollowChassis(Vector3 position)
