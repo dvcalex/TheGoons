@@ -19,6 +19,14 @@ public enum RoundResult
     Cancelled
 }
 
+// A round has two timed stages, but GamePhase remains Playing for both.
+public enum RoundStage
+{
+    None,
+    Hiding,
+    Seeking
+}
+
 public class GameManager : NetworkBehaviour
 {
     public static GameManager _instance
@@ -34,6 +42,7 @@ public class GameManager : NetworkBehaviour
     private struct RoundState : INetworkSerializable, IEquatable<RoundState>
     {
         public GamePhase Phase;
+        public RoundStage Stage;
         public RoundResult Result;
         public int Hiders;
         public double EndTime;
@@ -43,9 +52,11 @@ public class GameManager : NetworkBehaviour
             where T : IReaderWriter
         {
             int phase = (int)Phase;
+            int stage = (int)Stage;
             int result = (int)Result;
 
             serializer.SerializeValue(ref phase);
+            serializer.SerializeValue(ref stage);
             serializer.SerializeValue(ref result);
             serializer.SerializeValue(ref Hiders);
             serializer.SerializeValue(ref EndTime);
@@ -54,6 +65,7 @@ public class GameManager : NetworkBehaviour
             if (serializer.IsReader)
             {
                 Phase = (GamePhase)phase;
+                Stage = (RoundStage)stage;
                 Result = (RoundResult)result;
             }
         }
@@ -61,6 +73,7 @@ public class GameManager : NetworkBehaviour
         public bool Equals(RoundState other)
         {
             return Phase == other.Phase &&
+                   Stage == other.Stage &&
                    Result == other.Result &&
                    Hiders == other.Hiders &&
                    EndTime == other.EndTime &&
@@ -78,6 +91,7 @@ public class GameManager : NetworkBehaviour
             {
                 int hash = 17;
                 hash = hash * 31 + (int)Phase;
+                hash = hash * 31 + (int)Stage;
                 hash = hash * 31 + (int)Result;
                 hash = hash * 31 + Hiders;
                 hash = hash * 31 + EndTime.GetHashCode();
@@ -92,6 +106,7 @@ public class GameManager : NetworkBehaviour
             new RoundState
             {
                 Phase = GamePhase.Lobby,
+                Stage = RoundStage.None,
                 Result = RoundResult.None,
                 Hiders = 0,
                 EndTime = 0,
@@ -104,6 +119,9 @@ public class GameManager : NetworkBehaviour
     // ==========================================
 
     public GamePhase CurrentPhase => roundState.Value.Phase;
+    public RoundStage CurrentStage => roundState.Value.Stage;
+    public bool IsHiding => CurrentPhase == GamePhase.Playing && CurrentStage == RoundStage.Hiding;
+    public bool IsSeeking => CurrentPhase == GamePhase.Playing && CurrentStage == RoundStage.Seeking;
     public RoundResult Result => roundState.Value.Result;
     public int HidersCount => roundState.Value.Hiders;
 
@@ -115,7 +133,7 @@ public class GameManager : NetworkBehaviour
         get
         {
             if (!IsSpawned || NetworkManager == null)
-                return roundDuration;
+                return seekDuration;
 
             RoundState state = roundState.Value;
 
@@ -136,6 +154,8 @@ public class GameManager : NetworkBehaviour
     // ==========================================
 
     public event Action<GamePhase> PhaseChanged;
+    // Fires on every connected client when the stage changes.
+    public event Action<RoundStage> StageChanged;
     public event Action PreStart;
     public event Action PostStart;
     public event Action<RoundResult> PreEnd;
@@ -149,7 +169,8 @@ public class GameManager : NetworkBehaviour
 
     [Header("Round")]
     [SerializeField, Min(0.1f)]
-    private float roundDuration = 60f;
+    private float seekDuration = 60f;
+    [Min(0.1f)] public float hideDuration = 30f;
 
     public Player[] players = Array.Empty<Player>();
 
@@ -159,6 +180,7 @@ public class GameManager : NetworkBehaviour
     [Header("Optional UI")]
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI hidersCountText;
+    public TextMeshProUGUI stageText;
     public TextMeshProUGUI lobbyCodeText;
 
     [Header("Debug")]
@@ -206,10 +228,11 @@ public class GameManager : NetworkBehaviour
             roundState.Value = new RoundState
             {
                 Phase = GamePhase.Lobby,
+                Stage = RoundStage.None,
                 Result = RoundResult.None,
                 Hiders = 0,
                 EndTime = 0,
-                TimeLeft = roundDuration
+                TimeLeft = seekDuration
             };
 
             NetworkManager.OnClientDisconnectCallback +=
@@ -223,6 +246,7 @@ public class GameManager : NetworkBehaviour
 
         // Initialize listeners for late-joining clients.
         PhaseChanged?.Invoke(CurrentPhase);
+        StageChanged?.Invoke(CurrentStage);
         HidersCountChanged?.Invoke(HidersCount);
     }
 
@@ -283,15 +307,21 @@ public class GameManager : NetworkBehaviour
         if (!timerIsRunning)
             return;
 
-        // Server determines the winner.
+        // Hider elimination ends the round in either timed stage.
         if (remainingHiders.Count == 0)
         {
             EndGameInternal(RoundResult.SeekerWins);
+            return;
         }
-        else if (timeRemaining <= 0f)
-        {
+
+        if (timeRemaining > 0f)
+            return;
+
+        // Hiding time is up: unlock the seeker and start a fresh countdown.
+        if (IsHiding)
+            BeginSeekingInternal();
+        else if (IsSeeking)
             EndGameInternal(RoundResult.HidersWin);
-        }
     }
 
     // ==========================================
@@ -323,13 +353,15 @@ public class GameManager : NetworkBehaviour
 
         IEnumerable<Player> hiders = players;
 
+        Player activeSeeker = seeker;
+
         if (Server._instance != null && Server._instance.IsSpawned)
         {
-            List<Player> tmp = Server._instance.GetClientPlayers();
-
-            Debug.Log($"{tmp.Count}");
-
-            hiders = Server._instance.GetClientPlayers();
+            // Count everyone other than the seeker. Default to host as seeker
+            // if no explicit seeker has been selected yet.
+            hiders = Server._instance.GetAllPlayers();
+            if (activeSeeker == null)
+                activeSeeker = Server._instance.GetHostPlayer();
         }
 
         if (hiders != null)
@@ -340,7 +372,7 @@ public class GameManager : NetworkBehaviour
                     continue;
 
                 // Do not count the seeker as a hider.
-                if (player == seeker)
+                if (player == activeSeeker)
                     continue;
 
                 remainingHiders.Add(player.NetworkObjectId);
@@ -358,19 +390,36 @@ public class GameManager : NetworkBehaviour
         }
 
         double endTime =
-            NetworkManager.ServerTime.Time + roundDuration;
+            NetworkManager.ServerTime.Time + hideDuration;
 
         SetRoundState(
             GamePhase.Playing,
+            RoundStage.Hiding,
             RoundResult.None,
             remainingHiders.Count,
             endTime,
-            roundDuration
+            hideDuration
         );
 
-        Debug.Log(
-            $"Game started with {remainingHiders.Count} hiders."
+        Debug.Log($"Round started: Hiding ({hideDuration:0.#}s), {remainingHiders.Count} hiders.");
+    }
+
+    // Called only by the server, when the hiding timer expires.
+    private void BeginSeekingInternal()
+    {
+        if (!CanControlRound() || !IsHiding)
+            return;
+
+        SetRoundState(
+            GamePhase.Playing,
+            RoundStage.Seeking,
+            RoundResult.None,
+            remainingHiders.Count,
+            NetworkManager.ServerTime.Time + seekDuration,
+            seekDuration
         );
+
+        Debug.Log($"Seeking started ({seekDuration:0.#}s).");
     }
 
     // ==========================================
@@ -594,6 +643,7 @@ public class GameManager : NetworkBehaviour
 
         SetRoundState(
             GamePhase.Results,
+            RoundStage.None,
             result,
             remainingHiders.Count,
             0,
@@ -627,10 +677,11 @@ public class GameManager : NetworkBehaviour
 
         SetRoundState(
             GamePhase.Lobby,
+            RoundStage.None,
             RoundResult.None,
             0,
             0,
-            roundDuration
+            seekDuration
         );
     }
 
@@ -640,6 +691,7 @@ public class GameManager : NetworkBehaviour
 
     private void SetRoundState(
         GamePhase phase,
+        RoundStage stage,
         RoundResult result,
         int hiders,
         double endTime,
@@ -655,6 +707,7 @@ public class GameManager : NetworkBehaviour
             roundState.Value = new RoundState
             {
                 Phase = phase,
+                Stage = stage,
                 Result = result,
                 Hiders = hiders,
                 EndTime = endTime,
@@ -675,6 +728,7 @@ public class GameManager : NetworkBehaviour
         RoundState current)
     {
         bool phaseChanged = previous.Phase != current.Phase;
+        bool stageChanged = previous.Stage != current.Stage;
         bool countChanged = previous.Hiders != current.Hiders;
 
         if (phaseChanged)
@@ -699,6 +753,11 @@ public class GameManager : NetworkBehaviour
         if (phaseChanged)
         {
             PhaseChanged?.Invoke(current.Phase);
+        }
+
+        if (stageChanged)
+        {
+            StageChanged?.Invoke(current.Stage);
         }
 
         if (countChanged)
@@ -813,6 +872,19 @@ public class GameManager : NetworkBehaviour
             {
                 hidersCountText.text = formatted;
             }
+        }
+
+        if (stageText != null)
+        {
+            string label = CurrentStage switch
+            {
+                RoundStage.Hiding => "HIDING TIME",
+                RoundStage.Seeking => "SEEKER TIME",
+                _ => CurrentPhase == GamePhase.Results ? "ROUND OVER" : "LOBBY"
+            };
+
+            if (stageText.text != label)
+                stageText.text = label;
         }
     }
 }

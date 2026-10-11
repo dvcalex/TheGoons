@@ -258,7 +258,7 @@ public class Player : NetworkBehaviour
 
         health.Value = Mathf.Max(0f, health.Value - damage);
 
-        ShakeCamera(1f, 3f, 0.1f, 0.5f);
+        ShakeCamera(2f, 3f, 0.1f, 0.5f);
 
         if (health.Value <= 0f)
         {
@@ -581,7 +581,7 @@ public class Player : NetworkBehaviour
 
         if (Random.Range(0f, 1f) < 0.05f)
         {
-            ShakeCamera(1f, 3f, 0.1f, 0.5f);
+            ShakeCamera(1f, 10f, 0.1f, 0.5f);
             FuckingPoop_RPC();
         }
     }
