@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using Unity.Netcode;
 using System;
+using System.Linq;
 
 public class Server : NetworkBehaviour
 {
@@ -110,7 +111,7 @@ public class Server : NetworkBehaviour
     {
         List<Player> resultSet = new List<Player>();
 
-        resultSet.AddRange(_players.FindAll(p => p.OwnerClientId != NetworkManager.ServerClientId));
+        resultSet.AddRange(_players.Where(x=> (x.OwnerClientId != NetworkManager.ServerClientId)));
 
         return resultSet;
     }

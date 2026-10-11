@@ -23,44 +23,117 @@ public class GameManager : NetworkBehaviour
 {
     public static GameManager _instance
     {
-        get;
-        private set;
+        get; private set;
     }
-
     public static event Action<GameManager> InstanceChanged;
 
-    public GamePhase CurrentPhase
+    // ==========================================
+    // NETWORKED ROUND STATE
+    // ==========================================
+
+    private struct RoundState : INetworkSerializable, IEquatable<RoundState>
     {
-        get;
-        private set;
-    } = GamePhase.Lobby;
-    public RoundResult Result
-    {
-        get;
-        private set;
+        public GamePhase Phase;
+        public RoundResult Result;
+        public int Hiders;
+        public double EndTime;
+        public float TimeLeft;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer)
+            where T : IReaderWriter
+        {
+            int phase = (int)Phase;
+            int result = (int)Result;
+
+            serializer.SerializeValue(ref phase);
+            serializer.SerializeValue(ref result);
+            serializer.SerializeValue(ref Hiders);
+            serializer.SerializeValue(ref EndTime);
+            serializer.SerializeValue(ref TimeLeft);
+
+            if (serializer.IsReader)
+            {
+                Phase = (GamePhase)phase;
+                Result = (RoundResult)result;
+            }
+        }
+
+        public bool Equals(RoundState other)
+        {
+            return Phase == other.Phase &&
+                   Result == other.Result &&
+                   Hiders == other.Hiders &&
+                   EndTime == other.EndTime &&
+                   TimeLeft == other.TimeLeft;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is RoundState other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + (int)Phase;
+                hash = hash * 31 + (int)Result;
+                hash = hash * 31 + Hiders;
+                hash = hash * 31 + EndTime.GetHashCode();
+                hash = hash * 31 + TimeLeft.GetHashCode();
+                return hash;
+            }
+        }
     }
+
+    private readonly NetworkVariable<RoundState> roundState =
+        new NetworkVariable<RoundState>(
+            new RoundState
+            {
+                Phase = GamePhase.Lobby,
+                Result = RoundResult.None,
+                Hiders = 0,
+                EndTime = 0,
+                TimeLeft = 60f
+            }
+        );
+
+    // ==========================================
+    // PUBLIC PROPERTIES
+    // ==========================================
+
+    public GamePhase CurrentPhase => roundState.Value.Phase;
+    public RoundResult Result => roundState.Value.Result;
+    public int HidersCount => roundState.Value.Hiders;
+
+    public bool timerIsRunning =>
+        CurrentPhase == GamePhase.Playing;
 
     public float timeRemaining
     {
-        get;
-        private set;
-    }
-
-    public bool timerIsRunning
-    {
         get
         {
-            return CurrentPhase == GamePhase.Playing;
+            if (!IsSpawned || NetworkManager == null)
+                return roundDuration;
+
+            RoundState state = roundState.Value;
+
+            if (state.Phase != GamePhase.Playing)
+                return state.TimeLeft;
+
+            // Uses synchronized network time instead
+            // of updating a timer NetworkVariable every frame.
+            return Mathf.Max(
+                0f,
+                (float)(state.EndTime - NetworkManager.ServerTime.Time)
+            );
         }
     }
 
-    public int HidersCount
-    {
-        get
-        {
-            return remainingHiders.Count;
-        }
-    }
+    // ==========================================
+    // EVENTS
+    // ==========================================
 
     public event Action<GamePhase> PhaseChanged;
     public event Action PreStart;
@@ -70,10 +143,18 @@ public class GameManager : NetworkBehaviour
     public event Action<Player> HiderCaught;
     public event Action<int> HidersCountChanged;
 
+    // ==========================================
+    // INSPECTOR
+    // ==========================================
+
     [Header("Round")]
     [SerializeField, Min(0.1f)]
     private float roundDuration = 60f;
+
     public Player[] players = Array.Empty<Player>();
+
+    [Tooltip("Assign the seeker so they are excluded from the hider count.")]
+    public Player seeker;
 
     [Header("Optional UI")]
     public TextMeshProUGUI timerText;
@@ -81,14 +162,22 @@ public class GameManager : NetworkBehaviour
     public TextMeshProUGUI lobbyCodeText;
 
     [Header("Debug")]
-    [SerializeField]
-    private bool isDebugging;
-    [SerializeField]
-    private GamePhase debugPhase = GamePhase.Lobby;
-    [SerializeField]
-    private RoundResult debugResult = RoundResult.None;
-    private readonly List<Player> remainingHiders = new();
+    [SerializeField] private bool isDebugging;
+    [SerializeField] private GamePhase debugPhase = GamePhase.Lobby;
+    [SerializeField] private RoundResult debugResult = RoundResult.None;
+
+    // ==========================================
+    // PRIVATE FIELDS
+    // ==========================================
+
+    // Only the server maintains this collection.
+    private readonly HashSet<ulong> remainingHiders = new();
+
     private bool changingPhase;
+
+    // ==========================================
+    // UNITY LIFECYCLE
+    // ==========================================
 
     private void Awake()
     {
@@ -99,175 +188,396 @@ public class GameManager : NetworkBehaviour
         }
 
         _instance = this;
-        timeRemaining = roundDuration;
-
-        if (isDebugging)
-        {
-            debugPhase = CurrentPhase;
-            debugResult = Result;
-        }
 
         UpdateUI();
         InstanceChanged?.Invoke(this);
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        roundState.OnValueChanged += OnRoundStateChanged;
+
+        if (IsServer)
+        {
+            remainingHiders.Clear();
+
+            roundState.Value = new RoundState
+            {
+                Phase = GamePhase.Lobby,
+                Result = RoundResult.None,
+                Hiders = 0,
+                EndTime = 0,
+                TimeLeft = roundDuration
+            };
+
+            NetworkManager.OnClientDisconnectCallback +=
+                OnClientDisconnected;
+        }
+
+        debugPhase = CurrentPhase;
+        debugResult = Result;
+
+        UpdateUI();
+
+        // Initialize listeners for late-joining clients.
+        PhaseChanged?.Invoke(CurrentPhase);
+        HidersCountChanged?.Invoke(HidersCount);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        roundState.OnValueChanged -= OnRoundStateChanged;
+
+        if (NetworkManager != null)
+        {
+            NetworkManager.OnClientDisconnectCallback -=
+                OnClientDisconnected;
+        }
+
+        remainingHiders.Clear();
+
+        base.OnNetworkDespawn();
+    }
+
     private void OnDestroy()
     {
         if (_instance != this)
-        {
             return;
-        }
 
         _instance = null;
         InstanceChanged?.Invoke(null);
     }
 
-    private void OnValidate()
-    {
-        if (!Application.isPlaying || !isDebugging)
-        {
-            return;
-        }
-
-        // Handle Phase changes from Inspector
-        if (debugPhase != CurrentPhase)
-        {
-            if (debugPhase == GamePhase.Lobby)
-            {
-                ReturnToLobbyInternal();
-            }
-            else if (debugPhase == GamePhase.Playing)
-            {
-                StartGameInternal();
-            }
-            else if (debugPhase == GamePhase.Results)
-            {
-                // Fallback to a default result if none selected when switching to Results via Inspector
-                RoundResult targetResult = debugResult == RoundResult.None ? RoundResult.HidersWin : debugResult;
-                EndGameInternal(targetResult);
-            }
-        }
-
-        // Handle Result changes while already in Results phase
-        else if (CurrentPhase == GamePhase.Results && debugResult != Result && debugResult != RoundResult.None)
-        {
-            EndGameInternal(debugResult);
-        }
-    }
-
     private void Update()
     {
-        if (!IsServer)
-            return;
-
-        if (Player.me == null)
-            return;
-
-        if (Player.me._input.actions["StartGame"].WasPressedThisFrame())
-        {
-            StartGame_RPC();
-        }
-
-        if (!timerIsRunning || !CanControlRound())
-        {
-            return;
-        }
-
-        if (remainingHiders.RemoveAll(IsMissingPlayer) > 0)
-        {
-            HidersCountChanged?.Invoke(HidersCount);
-        }
-
-        timeRemaining = Mathf.Max(0f, timeRemaining - Time.deltaTime);
+        // Runs on both host and clients.
         UpdateUI();
 
-        if (HidersCount == 0 || timeRemaining == 0f)
+        if (!IsSpawned || !IsServer)
+            return;
+
+        HandleDebug();
+
+        // Host start-game input.
+        if (Player.me != null &&
+            Player.me._input != null &&
+            Player.me._input.actions != null)
         {
-            OnEndGame_RPC();
+            var startAction =
+                Player.me._input.actions.FindAction("StartGame");
+
+            if (startAction != null &&
+                startAction.WasPressedThisFrame())
+            {
+                StartGame_RPC();
+            }
+        }
+
+        if (!timerIsRunning || changingPhase)
+            return;
+
+        CleanupMissingHiders();
+
+        if (!timerIsRunning)
+            return;
+
+        // Server determines the winner.
+        if (remainingHiders.Count == 0)
+        {
+            EndGameInternal(RoundResult.SeekerWins);
+        }
+        else if (timeRemaining <= 0f)
+        {
+            EndGameInternal(RoundResult.HidersWin);
         }
     }
 
-    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
+    // ==========================================
+    // START GAME
+    // ==========================================
+
+    // Compatibility with your original method name.
+    // Only the server can start the round.
     public void StartGame_RPC()
     {
-        if (!isDebugging && (CurrentPhase != GamePhase.Lobby || !CanControlRound()))
-        {
+        if (!CanControlRound())
             return;
-        }
 
         StartGameInternal();
     }
 
     private void StartGameInternal()
     {
+        if (!CanControlRound())
+            return;
+
+        if (CurrentPhase == GamePhase.Playing)
+            return;
+
+        if (!isDebugging && CurrentPhase != GamePhase.Lobby)
+            return;
+
+        remainingHiders.Clear();
+
         IEnumerable<Player> hiders = players;
 
         if (Server._instance != null && Server._instance.IsSpawned)
         {
+            List<Player> tmp = Server._instance.GetClientPlayers();
+
+            Debug.Log($"{tmp.Count}");
+
             hiders = Server._instance.GetClientPlayers();
         }
 
-        remainingHiders.Clear();
-
         if (hiders != null)
         {
-            foreach (Player hider in hiders)
+            foreach (Player player in hiders)
             {
-                if (hider != null && !remainingHiders.Contains(hider))
-                {
-                    remainingHiders.Add(hider);
-                }
+                if (player == null || !player.IsSpawned)
+                    continue;
+
+                // Do not count the seeker as a hider.
+                if (player == seeker)
+                    continue;
+
+                remainingHiders.Add(player.NetworkObjectId);
             }
         }
 
-        if (HidersCount == 0 && !isDebugging)
+        if (remainingHiders.Count == 0 && !isDebugging)
         {
+            Debug.LogWarning(
+                "GameManager: Cannot start without hiders."
+            );
+
+            debugPhase = CurrentPhase;
             return;
         }
 
-        timeRemaining = roundDuration;
-        ChangePhase(GamePhase.Playing);
-        debugPhase = CurrentPhase;
-        debugResult = Result;
+        double endTime =
+            NetworkManager.ServerTime.Time + roundDuration;
+
+        SetRoundState(
+            GamePhase.Playing,
+            RoundResult.None,
+            remainingHiders.Count,
+            endTime,
+            roundDuration
+        );
+
+        Debug.Log(
+            $"Game started with {remainingHiders.Count} hiders."
+        );
     }
 
-    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
+    // ==========================================
+    // HIDER DEATH
+    // ==========================================
+
+    // Keep the original public method for other scripts.
+    //
+    // Host: processes directly.
+    // Client: sends a request to the server.
     public void OnHiderDeath_RPC(ulong playerObjId)
     {
-        Player hider = null;
-        hider = NetworkManager.SpawnManager.SpawnedObjects[playerObjId].GetComponent<Player>();
-
-        if (!timerIsRunning || !CanControlRound() || hider == null || !remainingHiders.Remove(hider))
-        {
+        if (!IsSpawned)
             return;
-        }
 
-        HidersCountChanged?.Invoke(HidersCount);
-        HiderCaught?.Invoke(hider);
-        UpdateUI();
-
-        if (HidersCount == 0 && IsServer)
+        if (IsServer)
         {
-            OnEndGame_RPC();
-        }
-    }
-
-    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
-    public void OnEndGame_RPC()
-    {
-        if (HidersCount > 0)
-        {
-            EndGame(RoundResult.HidersWin);
+            RemoveHider(playerObjId, true);
         }
         else
         {
-            EndGame(RoundResult.SeekerWins);
+            ReportHiderDeathRpc(playerObjId);
         }
+    }
+
+    [Rpc(
+        SendTo.Server,
+        InvokePermission = RpcInvokePermission.Everyone
+    )]
+    private void ReportHiderDeathRpc(
+        ulong playerObjId,
+        RpcParams rpcParams = default)
+    {
+        if (!IsServer || !timerIsRunning)
+            return;
+
+        if (!remainingHiders.Contains(playerObjId))
+            return;
+
+        // Validate the client reporting the death.
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(
+            playerObjId,
+            out NetworkObject playerObject))
+        {
+            return;
+        }
+
+        ulong senderId = rpcParams.Receive.SenderClientId;
+
+        if (playerObject.OwnerClientId != senderId)
+        {
+            Debug.LogWarning(
+                $"Client {senderId} attempted to report " +
+                $"another player's death."
+            );
+
+            return;
+        }
+
+        RemoveHider(playerObjId, true);
+    }
+
+    private void RemoveHider(ulong playerObjId, bool caught)
+    {
+        if (!IsServer || !timerIsRunning)
+            return;
+
+        // HashSet.Remove returns false if already removed.
+        // Prevents duplicate deaths from decreasing count.
+        if (!remainingHiders.Remove(playerObjId))
+            return;
+
+        UpdateHiderCount();
+
+        if (caught)
+        {
+            NotifyHiderCaughtRpc(playerObjId);
+        }
+
+        if (remainingHiders.Count == 0)
+        {
+            EndGameInternal(RoundResult.SeekerWins);
+        }
+    }
+
+    [Rpc(
+        SendTo.Everyone,
+        InvokePermission = RpcInvokePermission.Server
+    )]
+    private void NotifyHiderCaughtRpc(ulong playerObjId)
+    {
+        if (NetworkManager == null ||
+            NetworkManager.SpawnManager == null)
+            return;
+
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(
+            playerObjId,
+            out NetworkObject playerObject))
+        {
+            return;
+        }
+
+        Player player = playerObject.GetComponent<Player>();
+
+        if (player != null)
+        {
+            HiderCaught?.Invoke(player);
+        }
+    }
+
+    // ==========================================
+    // DISCONNECTS / CLEANUP
+    // ==========================================
+
+    private void CleanupMissingHiders()
+    {
+        RemoveDisconnectedHiders(null);
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        if (!IsServer || !timerIsRunning)
+            return;
+
+        RemoveDisconnectedHiders(clientId);
+    }
+
+    private void RemoveDisconnectedHiders(ulong? clientId)
+    {
+        if (!IsServer || !timerIsRunning)
+            return;
+
+        List<ulong> missing = null;
+
+        foreach (ulong id in remainingHiders)
+        {
+            bool shouldRemove = false;
+
+            if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(
+                id,
+                out NetworkObject playerObject))
+            {
+                shouldRemove = true;
+            }
+            else if (clientId.HasValue &&
+                     playerObject.OwnerClientId == clientId.Value)
+            {
+                shouldRemove = true;
+            }
+
+            if (shouldRemove)
+            {
+                missing ??= new List<ulong>();
+                missing.Add(id);
+            }
+        }
+
+        if (missing == null)
+            return;
+
+        foreach (ulong id in missing)
+        {
+            remainingHiders.Remove(id);
+        }
+
+        UpdateHiderCount();
+
+        if (remainingHiders.Count == 0)
+        {
+            EndGameInternal(RoundResult.SeekerWins);
+        }
+    }
+
+    private void UpdateHiderCount()
+    {
+        if (!IsServer || !IsSpawned)
+            return;
+
+        RoundState state = roundState.Value;
+        state.Hiders = remainingHiders.Count;
+
+        roundState.Value = state;
+    }
+
+    // ==========================================
+    // END GAME
+    // ==========================================
+
+    // Preserves your original method name.
+    // Intended for server-side calls.
+    public void OnEndGame_RPC()
+    {
+        if (!CanControlRound() || !timerIsRunning)
+            return;
+
+        RoundResult result = remainingHiders.Count > 0
+            ? RoundResult.HidersWin
+            : RoundResult.SeekerWins;
+
+        EndGameInternal(result);
     }
 
     public void EndGame(RoundResult result)
     {
-        if (!isDebugging && (!timerIsRunning || !CanControlRound() || result == RoundResult.None))
+        if (!CanControlRound() ||
+            !timerIsRunning ||
+            result == RoundResult.None)
         {
             return;
         }
@@ -277,68 +587,82 @@ public class GameManager : NetworkBehaviour
 
     private void EndGameInternal(RoundResult result)
     {
-        ChangePhase(GamePhase.Results, result);
-        debugPhase = CurrentPhase;
-        debugResult = Result;
+        if (!CanControlRound() || !timerIsRunning)
+            return;
+
+        float remaining = timeRemaining;
+
+        SetRoundState(
+            GamePhase.Results,
+            result,
+            remainingHiders.Count,
+            0,
+            remaining
+        );
+
+        Debug.Log($"Game ended: {result}");
     }
+
+    // ==========================================
+    // RETURN TO LOBBY
+    // ==========================================
 
     public void ReturnToLobby()
     {
-        if (!isDebugging && (CurrentPhase == GamePhase.Lobby || !CanControlRound()))
-        {
+        if (!CanControlRound())
             return;
-        }
 
         ReturnToLobbyInternal();
     }
 
     private void ReturnToLobbyInternal()
     {
-        if (timerIsRunning)
-        {
-            EndGame(RoundResult.Cancelled);
-        }
+        if (!CanControlRound())
+            return;
+
+        if (CurrentPhase == GamePhase.Lobby)
+            return;
 
         remainingHiders.Clear();
-        timeRemaining = roundDuration;
-        ChangePhase(GamePhase.Lobby);
-        debugPhase = CurrentPhase;
-        debugResult = Result;
+
+        SetRoundState(
+            GamePhase.Lobby,
+            RoundResult.None,
+            0,
+            0,
+            roundDuration
+        );
     }
 
-    private void ChangePhase(GamePhase phase, RoundResult result = RoundResult.None)
+    // ==========================================
+    // NETWORK STATE MANAGEMENT
+    // ==========================================
+
+    private void SetRoundState(
+        GamePhase phase,
+        RoundResult result,
+        int hiders,
+        double endTime,
+        float timeLeft)
     {
+        if (!CanControlRound())
+            return;
+
         changingPhase = true;
 
         try
         {
-            if (phase == GamePhase.Playing)
+            roundState.Value = new RoundState
             {
-                PreStart?.Invoke();
-            }
-            else if (phase == GamePhase.Results)
-            {
-                PreEnd?.Invoke(result);
-            }
+                Phase = phase,
+                Result = result,
+                Hiders = hiders,
+                EndTime = endTime,
+                TimeLeft = timeLeft
+            };
 
-            CurrentPhase = phase;
-            Result = result;
-            UpdateUI();
-            PhaseChanged?.Invoke(phase);
-
-            if (phase == GamePhase.Playing)
-            {
-                HidersCountChanged?.Invoke(HidersCount);
-                PostStart?.Invoke();
-            }
-            else if (phase == GamePhase.Results)
-            {
-                PostEnd?.Invoke(result);
-            }
-            else
-            {
-                HidersCountChanged?.Invoke(0);
-            }
+            debugPhase = phase;
+            debugResult = result;
         }
         finally
         {
@@ -346,49 +670,149 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    private bool CanControlRound()
+    private void OnRoundStateChanged(
+        RoundState previous,
+        RoundState current)
     {
-        if (isDebugging)
+        bool phaseChanged = previous.Phase != current.Phase;
+        bool countChanged = previous.Hiders != current.Hiders;
+
+        if (phaseChanged)
         {
-            return true;
+            if (current.Phase == GamePhase.Playing)
+            {
+                PreStart?.Invoke();
+            }
+            else if (current.Phase == GamePhase.Results)
+            {
+                PreEnd?.Invoke(current.Result);
+            }
+            else if (current.Phase == GamePhase.Lobby &&
+                     previous.Phase == GamePhase.Playing)
+            {
+                PreEnd?.Invoke(RoundResult.Cancelled);
+            }
         }
 
-        var network = Unity.Netcode.NetworkManager.Singleton;
+        UpdateUI();
 
-        if (changingPhase)
+        if (phaseChanged)
         {
-            return false;
+            PhaseChanged?.Invoke(current.Phase);
         }
 
-        if (network == null || !network.IsListening)
+        if (countChanged)
         {
-            return true;
+            HidersCountChanged?.Invoke(current.Hiders);
         }
 
-        if (network.IsServer)
+        if (phaseChanged)
         {
-            return true;
+            if (current.Phase == GamePhase.Playing)
+            {
+                PostStart?.Invoke();
+            }
+            else if (current.Phase == GamePhase.Results)
+            {
+                PostEnd?.Invoke(current.Result);
+            }
+            else if (current.Phase == GamePhase.Lobby &&
+                     previous.Phase == GamePhase.Playing)
+            {
+                PostEnd?.Invoke(RoundResult.Cancelled);
+            }
         }
 
-        return false;
+        debugPhase = current.Phase;
+        debugResult = current.Result;
     }
 
-    private static bool IsMissingPlayer(Player player)
+    // ==========================================
+    // DEBUG
+    // ==========================================
+
+    private void HandleDebug()
     {
-        return player == null;
+        if (!isDebugging || changingPhase)
+            return;
+
+        if (debugPhase != CurrentPhase)
+        {
+            switch (debugPhase)
+            {
+                case GamePhase.Lobby:
+                    ReturnToLobbyInternal();
+                    break;
+
+                case GamePhase.Playing:
+                    StartGameInternal();
+                    break;
+
+                case GamePhase.Results:
+                    if (timerIsRunning)
+                    {
+                        RoundResult result =
+                            debugResult == RoundResult.None
+                                ? RoundResult.HidersWin
+                                : debugResult;
+
+                        EndGameInternal(result);
+                    }
+                    else
+                    {
+                        debugPhase = CurrentPhase;
+                    }
+                    break;
+            }
+        }
+        else if (CurrentPhase == GamePhase.Results &&
+                 debugResult != Result &&
+                 debugResult != RoundResult.None)
+        {
+            RoundState state = roundState.Value;
+            state.Result = debugResult;
+
+            roundState.Value = state;
+        }
+    }
+
+    // ==========================================
+    // UTILITIES
+    // ==========================================
+
+    private bool CanControlRound()
+    {
+        return IsServer &&
+               IsSpawned &&
+               !changingPhase;
     }
 
     private void UpdateUI()
     {
         if (timerText != null)
         {
-            int seconds = Mathf.CeilToInt(timeRemaining);
-            timerText.text = $"{seconds / 60:00}:{seconds % 60:00}";
+            int seconds = Mathf.CeilToInt(
+                Mathf.Max(0f, timeRemaining)
+            );
+
+            string formatted =
+                $"{seconds / 60:00}:{seconds % 60:00}";
+
+            if (timerText.text != formatted)
+            {
+                timerText.text = formatted;
+            }
         }
 
         if (hidersCountText != null)
         {
-            hidersCountText.text = $"Hiders Remaining: {HidersCount}";
+            string formatted =
+                $"Hiders Remaining: {HidersCount}";
+
+            if (hidersCountText.text != formatted)
+            {
+                hidersCountText.text = formatted;
+            }
         }
     }
 }
