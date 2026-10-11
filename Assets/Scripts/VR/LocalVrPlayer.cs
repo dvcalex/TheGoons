@@ -1,7 +1,6 @@
 using Unity.Netcode;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using MechLab;
 
 /// <summary>Local tracking plus replicated world-space poses for the VR host.</summary>
 public sealed class LocalVrPlayer : NetworkBehaviour
@@ -84,28 +83,13 @@ public sealed class LocalVrPlayer : NetworkBehaviour
 
         if (IsOwner && trollRig != null)
         {
-            var rig = trollRig.GetComponent<MechRig>();
-            if (rig != null && rig.physicalHead != null)
+            var rig = trollRig.GetComponent<VrRigController>();
+            if (rig != null)
             {
+                rig.BindTracking(offset);
                 head = rig.physicalHead.transform;
-            }
-
-            // Reuse the existing three-pose packet, but depict the actual collision bodies.
-            foreach (var limb in trollRig.GetComponentsInChildren<ServoLimb>())
-            {
-                if (limb.input == null)
-                {
-                    continue;
-                }
-
-                if (limb.input.hand == UnityEngine.XR.XRNode.LeftHand)
-                {
-                    left = limb.transform;
-                }
-                else if (limb.input.hand == UnityEngine.XR.XRNode.RightHand)
-                {
-                    right = limb.transform;
-                }
+                left = rig.leftHand.transform;
+                right = rig.rightHand.transform;
             }
         }
 

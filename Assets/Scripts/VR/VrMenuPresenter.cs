@@ -170,10 +170,9 @@ public sealed class VrMenuPresenter : MonoBehaviour
             return;
         }
 
-        // Preserve the tracking origin at the menu-to-game transition.
+        // The spawned rig owns its tracking frame; do not copy the menu world transform.
         if (menuOrigin != null)
         {
-            origin.transform.SetPositionAndRotation(menuOrigin.transform.position, menuOrigin.transform.rotation);
             menuOrigin.gameObject.SetActive(false);
             Destroy(menuOrigin.gameObject);
             menuOrigin = null;

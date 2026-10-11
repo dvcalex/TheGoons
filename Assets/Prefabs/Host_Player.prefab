@@ -437,7 +437,6 @@ GameObject:
   m_Component:
   - component: {fileID: 896679793630285671}
   - component: {fileID: 1525965653290996151}
-  - component: {fileID: 910000000000000007}
   m_Layer: 0
   m_Name: XR Origin
   m_TagString: Untagged
@@ -478,24 +477,6 @@ MonoBehaviour:
   m_CameraFloorOffsetObject: {fileID: 7310283448150209108}
   m_RequestedTrackingOriginMode: 2
   m_CameraYOffset: 1.65
---- !u!114 &910000000000000007
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4054056925215020604}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 606d7f3eed082a948aa9c4f73938c9a9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MechLab.Core::MechLab.OpenXRTransformInput
-  rig: {fileID: 6295981621141466651}
-  trackingSpace: {fileID: 7025612798250447353}
-  head: {fileID: 6870533409504989073}
-  leftController: {fileID: 6736182544825396890}
-  rightController: {fileID: 8386190766978465877}
-  readDeviceInput: 1
 --- !u!1 &4334468127637315160
 GameObject:
   m_ObjectHideFlags: 0
@@ -946,17 +927,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1498710252578475169, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
   m_PrefabInstance: {fileID: 910000000000000001}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6295981621141466651 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6629063085168356890, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
-  m_PrefabInstance: {fileID: 910000000000000001}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 910920813067245529}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 715adc0a4e4746dba3dc9dbd1fc8ccfd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: MechLab.Core::MechLab.MechRig
 --- !u!4 &7992626876398532726 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7082891048026011767, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
