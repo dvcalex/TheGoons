@@ -1,5 +1,6 @@
 
 using EZCameraShake;
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -137,6 +138,16 @@ public class Player : NetworkBehaviour
 
         transform.position = PlayerSpawn._instance.transform.position;
         InitializePostProcessing();
+
+        StartCoroutine(SpawnAfter());
+    }
+
+    IEnumerator SpawnAfter()
+    {
+        yield return new WaitForSeconds(0.125f);
+
+        Vector3 position = GameObject.Find("PlayerSpawn").transform.position;
+        transform.position = position;
     }
 
     public void InitOther()
@@ -380,6 +391,8 @@ public class Player : NetworkBehaviour
 
         if (networkIsDead.Value == state)
             return;
+
+        Instantiate(deathGFX, transform.position, transform.rotation);
 
         networkIsDead.Value = state;
 
