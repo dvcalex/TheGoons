@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1498710252578475169}
   - component: {fileID: 7215797926368126320}
   - component: {fileID: 6629063085168356890}
+  - component: {fileID: 920000000000000001}
   m_Layer: 0
   m_Name: TrollRig
   m_TagString: Untagged
@@ -41,6 +42,7 @@ Transform:
   - {fileID: 8413289591314937078}
   - {fileID: 4743886927937271382}
   - {fileID: 5162328832322681638}
+  - {fileID: 920000000000000003}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7215797926368126320
@@ -83,6 +85,8 @@ MonoBehaviour:
   trackingFloor: {fileID: 7082891048026011767}
   leftHand: {fileID: 2495987986186086854}
   rightHand: {fileID: 894025549326152461}
+  physicalHead: {fileID: 920000000000000006}
+  slew: {fileID: 920000000000000001}
   impacts:
   - {fileID: 7082224236183706841}
   - {fileID: 8061514173069990983}
@@ -158,7 +162,6 @@ Transform:
   m_Children:
   - {fileID: 3910518623229653177}
   - {fileID: 5278807205361472162}
-  - {fileID: 1024045740301348911}
   m_Father: {fileID: 1498710252578475169}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3929547470805847882
@@ -176,7 +179,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 614861968012136055}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 8da7f2ba0e22496896e09a3d154f0881, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -1013,6 +1016,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MechLab.Core::MechLab.HeadTrackedArmRoot
   limb: {fileID: 5247489872068016053}
   shoulderJoint: {fileID: 5817693509116650528}
+  physicalHead: {fileID: 920000000000000004}
   shoulderFromFloor: {x: -0.55, y: 1.45, z: 0}
   maximumRootSpeed: 8
 --- !u!114 &5542633176954342133
@@ -1617,6 +1621,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MechLab.Core::MechLab.HeadTrackedArmRoot
   limb: {fileID: 3993016961081382123}
   shoulderJoint: {fileID: 3142251155477130597}
+  physicalHead: {fileID: 920000000000000004}
   shoulderFromFloor: {x: 0.55, y: 1.45, z: 0}
   maximumRootSpeed: 8
 --- !u!114 &213532690510227616
@@ -3338,7 +3343,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 7444817654955020664}
+    m_TransformParent: {fileID: 920000000000000003}
     m_Modifications:
     - target: {fileID: 8591903015057607093, guid: 564133f38d976c8469d2dca279c909a0, type: 3}
       propertyPath: m_Name
@@ -3346,15 +3351,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8968710754373833487, guid: 564133f38d976c8469d2dca279c909a0, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.2777778
+      value: 1.15
       objectReference: {fileID: 0}
     - target: {fileID: 8968710754373833487, guid: 564133f38d976c8469d2dca279c909a0, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.352941
+      value: 1.15
       objectReference: {fileID: 0}
     - target: {fileID: 8968710754373833487, guid: 564133f38d976c8469d2dca279c909a0, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.2777778
+      value: 1.15
       objectReference: {fileID: 0}
     - target: {fileID: 8968710754373833487, guid: 564133f38d976c8469d2dca279c909a0, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3362,7 +3367,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8968710754373833487, guid: 564133f38d976c8469d2dca279c909a0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.4117647
+      value: -1.15
       objectReference: {fileID: 0}
     - target: {fileID: 8968710754373833487, guid: 564133f38d976c8469d2dca279c909a0, type: 3}
       propertyPath: m_LocalPosition.z
@@ -3604,3 +3609,128 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: aec8954fc3281db45b1790bebc83ff9c, type: 3}
   m_PrefabInstance: {fileID: 9206085930233575387}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &920000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1343098566809560}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb2ec72f690d4b6095390c85903117d0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: MechLab.Core::MechLab.ThumbstickSlewMotor
+  hull: {fileID: 3985229305273434376}
+  input: {fileID: 2495987986186086854}
+  surfacePull: {fileID: 7215797926368126320}
+  view: {fileID: 0}
+  speed: 2
+  responseSeconds: 0.35
+  acceleration: 3
+  brakingAcceleration: 4
+  deadzone: 0.2
+--- !u!1 &920000000000000002
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 920000000000000003}
+  - component: {fileID: 920000000000000004}
+  - component: {fileID: 920000000000000005}
+  - component: {fileID: 920000000000000006}
+  m_Layer: 2
+  m_Name: Physical Head
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &920000000000000003
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920000000000000002}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.7, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1024045740301348911}
+  m_Father: {fileID: 1498710252578475169}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!54 &920000000000000004
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920000000000000002}
+  serializedVersion: 5
+  m_Mass: 12
+  m_LinearDamping: 1
+  m_AngularDamping: 1
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 1
+  m_Constraints: 0
+  m_CollisionDetection: 2
+--- !u!136 &920000000000000005
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920000000000000002}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.24
+  m_Height: 0.7
+  m_Direction: 1
+  m_Center: {x: 0, y: -0.1, z: 0}
+--- !u!114 &920000000000000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920000000000000002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e523dd9dc15436b9263c07e292ca4df, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: MechLab.Core::MechLab.TrackedHeadMotor
+  input: {fileID: 2495987986186086854}
+  hull: {fileID: 3985229305273434376}
+  frequency: 6
+  maximumAcceleration: 80
+  maximumSpeed: 12
+  recoverySeconds: 0.25
+  localRotation: {x: 0, y: 0, z: 0, w: 1}

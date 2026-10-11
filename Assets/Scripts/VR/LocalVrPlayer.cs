@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using MechLab;
 
 /// <summary>Local tracking plus replicated world-space poses for the VR host.</summary>
 public sealed class LocalVrPlayer : NetworkBehaviour
@@ -38,6 +39,7 @@ public sealed class LocalVrPlayer : NetworkBehaviour
     });
     private Transform left;
     private Transform right;
+    private Transform head;
     private Transform[] remote;
     private float nextSend;
     private bool received;
@@ -78,6 +80,35 @@ public sealed class LocalVrPlayer : NetworkBehaviour
         var offset = origin.CameraFloorOffsetObject.transform;
         left = offset.Find("Left Controller");
         right = offset.Find("Right Controller");
+        head = origin.Camera.transform;
+
+        if (IsOwner && trollRig != null)
+        {
+            var rig = trollRig.GetComponent<MechRig>();
+            if (rig != null && rig.physicalHead != null)
+            {
+                head = rig.physicalHead.transform;
+            }
+
+            // Reuse the existing three-pose packet, but depict the actual collision bodies.
+            foreach (var limb in trollRig.GetComponentsInChildren<ServoLimb>())
+            {
+                if (limb.input == null)
+                {
+                    continue;
+                }
+
+                if (limb.input.hand == UnityEngine.XR.XRNode.LeftHand)
+                {
+                    left = limb.transform;
+                }
+                else if (limb.input.hand == UnityEngine.XR.XRNode.RightHand)
+                {
+                    right = limb.transform;
+                }
+            }
+        }
+
         if (!IsOwner)
         {
             remote = new Transform[3];
@@ -95,7 +126,7 @@ public sealed class LocalVrPlayer : NetworkBehaviour
         marker.name = label;
         marker.transform.SetParent(transform, false);
         marker.transform.localScale = size;
-        // Markers only depict the host; gameplay collisions come from the future character rig.
+        // Host physics handles gameplay contacts; remote markers are presentation only.
         var collider = marker.GetComponent<Collider>();
         collider.enabled = false;
         Destroy(collider);
@@ -130,8 +161,8 @@ public sealed class LocalVrPlayer : NetworkBehaviour
             nextSend = Time.unscaledTime + 1f / 30f;
             pose.Value = new RigPose
             {
-                head = origin.Camera.transform.position,
-                headRotation = origin.Camera.transform.rotation,
+                head = head.position,
+                headRotation = head.rotation,
                 left = left.position,
                 leftRotation = left.rotation,
                 right = right.position,
