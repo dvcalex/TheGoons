@@ -59,3 +59,9 @@ SurfacePullMotor takes priority while an arm is planted. Thumbstick braking resu
 VrUiInput shows each controller's ray and cursor only while its tracked pointer hits UI. Both visuals disappear on a miss or tracking loss; click handling still uses the existing InputSystemUIInputModule.
 
 Headset checks still required: lean/crouch and turn while stationary; travel in all four directions and release; push against a wall; plant a hand and pull; remove/re-wear the headset with the stick held; point onto/off menu panels; connect a desktop client and compare its markers to the physical fists. C# compilation and serialized reference checks do not validate comfort or collision feel.
+
+## VR menu controls
+
+Press the left controller's secondary button (Y on Quest) to show or hide the shared VR panels. Opening brings them in front of you. Hidden panels block neither pointer rays nor clicks; their UI objects remain active so connection and game services can continue running. Desktop presentation is restored when VR presentation stops.
+
+Press the right controller's secondary button (B on Quest) to request XR tracking recenter. Panels reposition after the tracking pose updates. Recenter support depends on the runtime and tracking-origin mode; if it is unavailable, the console directs you to the headset's system recenter control. This does not calibrate avatar height or arm reach. VrMenuPresenter also exposes ToggleMenu and Calibrate for UI button callbacks. Controls require the existing VR menu presenter, so the standalone VRTest physics scene does not provide them.

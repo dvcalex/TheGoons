@@ -41,6 +41,11 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
     private bool originalScalerEnabled;
     private bool originalRaycasterEnabled;
     private float originalScaleFactor;
+    private CanvasGroup visibilityGroup;
+    private float originalAlpha;
+    private bool originalInteractable;
+    private bool originalBlocksRaycasts;
+    private bool addedVisibilityGroup;
 
     public void Present(Camera viewer)
     {
@@ -52,6 +57,16 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
         if (!IsWorldSpace)
         {
             canvas = GetComponent<Canvas>();
+            visibilityGroup = GetComponent<CanvasGroup>();
+            addedVisibilityGroup = visibilityGroup == null;
+            if (addedVisibilityGroup)
+            {
+                visibilityGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            originalAlpha = visibilityGroup.alpha;
+            originalInteractable = visibilityGroup.interactable;
+            originalBlocksRaycasts = visibilityGroup.blocksRaycasts;
             rect = (RectTransform)transform;
             scaler = GetComponent<CanvasScaler>();
             originalMode = canvas.renderMode;
@@ -117,11 +132,40 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
         );
     }
 
+    public void SetVisible(bool visible)
+    {
+        if (!IsWorldSpace || visibilityGroup == null)
+        {
+            return;
+        }
+
+        if (visible)
+        {
+            visibilityGroup.alpha = originalAlpha;
+            visibilityGroup.interactable = originalInteractable;
+            visibilityGroup.blocksRaycasts = originalBlocksRaycasts;
+            raycaster.enabled = true;
+        }
+        else
+        {
+            visibilityGroup.alpha = 0f;
+            visibilityGroup.interactable = false;
+            visibilityGroup.blocksRaycasts = false;
+            raycaster.enabled = false;
+        }
+    }
+
     public void RestoreDesktop()
     {
         if (!IsWorldSpace || canvas == null)
         {
             return;
+        }
+
+        SetVisible(true);
+        if (addedVisibilityGroup)
+        {
+            Destroy(visibilityGroup);
         }
 
         IsWorldSpace = false;

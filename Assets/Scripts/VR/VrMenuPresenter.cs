@@ -38,10 +38,13 @@ public sealed class VrMenuPresenter : MonoBehaviour
     private bool cameraWasEnabled;
     private bool listenerWasEnabled;
     private bool recenterHeld;
+    private bool toggleHeld;
+    private bool menuVisible = true;
     private bool positioned;
     private int placementDelay;
     private bool[] desktopControlStates;
     private readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
+    private readonly List<XRInputSubsystem> trackingSubsystems = new List<XRInputSubsystem>();
 
     private IEnumerator Start()
     {
@@ -149,6 +152,7 @@ public sealed class VrMenuPresenter : MonoBehaviour
             if (panel != null)
             {
                 panel.Present(origin.Camera);
+                panel.SetVisible(menuVisible);
             }
         }
 
@@ -208,13 +212,70 @@ public sealed class VrMenuPresenter : MonoBehaviour
 
         var left = XRController.leftHand?.TryGetChildControl<ButtonControl>("secondaryButton");
         var right = XRController.rightHand?.TryGetChildControl<ButtonControl>("secondaryButton");
-        bool held = (left != null && left.isPressed) || (right != null && right.isPressed);
-        if (held && !recenterHeld)
+        bool togglePressed = left != null && left.isPressed;
+        bool held = right != null && right.isPressed;
+        if (Application.isFocused && headReady && togglePressed && !toggleHeld)
+        {
+            ToggleMenu();
+        }
+
+        if (Application.isFocused && headReady && held && !recenterHeld)
+        {
+            Calibrate();
+        }
+
+        toggleHeld = togglePressed;
+        recenterHeld = held;
+    }
+
+    public void ToggleMenu()
+    {
+        if (!IsVr)
+        {
+            return;
+        }
+
+        menuVisible = !menuVisible;
+        foreach (var panel in panels)
+        {
+            if (panel != null)
+            {
+                panel.SetVisible(menuVisible);
+            }
+        }
+
+        if (menuVisible)
         {
             Recenter();
         }
+    }
 
-        recenterHeld = held;
+    public void Calibrate()
+    {
+        if (!IsVr || CurrentOrigin == null)
+        {
+            return;
+        }
+
+        trackingSubsystems.Clear();
+        SubsystemManager.GetSubsystems(trackingSubsystems);
+        bool recentered = false;
+        foreach (var subsystem in trackingSubsystems)
+        {
+            if (subsystem.running && subsystem.TryRecenter())
+            {
+                recentered = true;
+            }
+        }
+
+        if (!recentered)
+        {
+            Debug.Log("[VR] Tracking recenter is unavailable in this tracking mode. Use the headset's system recenter control. UI panels will still recenter.", this);
+        }
+
+        // Wait for the updated tracking pose before placing panels again.
+        positioned = false;
+        placementDelay = 2;
     }
 
     public void Recenter()
@@ -236,6 +297,9 @@ public sealed class VrMenuPresenter : MonoBehaviour
         }
 
         IsVr = false;
+        menuVisible = true;
+        toggleHeld = false;
+        recenterHeld = false;
         if (uiInput != null)
         {
             uiInput.Deactivate();
