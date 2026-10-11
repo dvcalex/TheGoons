@@ -56,6 +56,7 @@ public sealed class VrRigController : MonoBehaviour
     private float headAuthority;
     private bool coveringEyes;
     private bool coverButtonHeld;
+    private bool eyeCoverLocked;
 
     public void BindTracking(Transform space)
     {
@@ -93,6 +94,7 @@ public sealed class VrRigController : MonoBehaviour
     private void Update()
     {
         FollowChassis(chassis.transform.position);
+        UpdateEyeCoverLock();
 
         var controller = InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);
         controller.TryGetFeatureValue(CommonUsages.primaryButton, out bool pressed);
@@ -107,6 +109,13 @@ public sealed class VrRigController : MonoBehaviour
 
     public void ToggleCoverEyes()
     {
+        UpdateEyeCoverLock();
+
+        if (eyeCoverLocked)
+        {
+            return;
+        }
+
         if (coveringEyes)
         {
             coveringEyes = false;
@@ -114,6 +123,26 @@ public sealed class VrRigController : MonoBehaviour
         else if (leftEyeHandTarget != null && rightEyeHandTarget != null)
         {
             coveringEyes = true;
+        }
+    }
+
+    private void UpdateEyeCoverLock()
+    {
+        GameManager game = GameManager._instance;
+
+        // GameManager ends Hiding when hideDuration expires. Use its state
+        // instead of starting a separate countdown on the VR player.
+        if (game != null && game.IsHiding)
+        {
+            eyeCoverLocked = true;
+            coveringEyes = true;
+            return;
+        }
+
+        if (eyeCoverLocked)
+        {
+            eyeCoverLocked = false;
+            coveringEyes = false;
         }
     }
 
@@ -272,6 +301,7 @@ public sealed class VrRigController : MonoBehaviour
 
     private void OnDisable()
     {
+        eyeCoverLocked = false;
         coveringEyes = false;
         coverButtonHeld = false;
         headTracked = false;
