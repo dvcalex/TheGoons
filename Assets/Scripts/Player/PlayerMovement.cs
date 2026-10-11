@@ -295,6 +295,12 @@ public class PlayerMovement : NetworkBehaviour
 
         moveInput = Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
         crouchInput = crouchAction.IsPressed();
+
+        if (crouchAction.WasPressedThisFrame())
+        {
+            Player.me.TURDMECHANICWHATTHEFUCKKKKKKKKKHOOLYSHITTURDMECHANIC();
+        }
+
         runInput = runAction.IsPressed();
         jumpHeld = jumpAction.IsPressed();
 
