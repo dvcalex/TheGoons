@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEditor;
 
@@ -8,19 +7,16 @@ public class RemoveLODsFromEditor
     private static void RemoveLODs()
     {
         if (!EditorUtility.DisplayDialog(
-                "Remove LODs From All Prefabs",
-                "This will remove all LODGroup components " +
-                "from prefabs in the project. This operation " +
-                "will modify prefab assets.\n\nContinue?",
-                "Remove LODs",
-                "Cancel"))
+            "Remove LODs From All Prefabs",
+            "This will remove all LODGroup components " + "from prefabs in the project. This operation " + "will modify prefab assets.\n\nContinue?",
+            "Remove LODs",
+            "Cancel"
+        ))
         {
             return;
         }
 
-        string[] prefabGuids =
-            AssetDatabase.FindAssets("t:Prefab");
-
+        string[] prefabGuids = AssetDatabase.FindAssets("t:Prefab");
         int modifiedCount = 0;
         int total = prefabGuids.Length;
 
@@ -28,23 +24,14 @@ public class RemoveLODsFromEditor
         {
             for (int i = 0; i < total; i++)
             {
-                string path =
-                    AssetDatabase.GUIDToAssetPath(prefabGuids[i]);
-
-                EditorUtility.DisplayProgressBar(
-                    "Removing LODs",
-                    path,
-                    total == 0 ? 1f : (float)i / total);
-
-                GameObject prefabRoot =
-                    PrefabUtility.LoadPrefabContents(path);
-
+                string path = AssetDatabase.GUIDToAssetPath(prefabGuids[i]);
+                EditorUtility.DisplayProgressBar("Removing LODs", path, total == 0 ? 1f : (float)i / total);
+                GameObject prefabRoot = PrefabUtility.LoadPrefabContents(path);
                 bool modified = false;
 
                 try
                 {
-                    LODGroup[] lodGroups =
-                        prefabRoot.GetComponentsInChildren<LODGroup>(true);
+                    LODGroup[] lodGroups = prefabRoot.GetComponentsInChildren<LODGroup>(true);
 
                     if (lodGroups.Length > 0)
                     {
@@ -53,9 +40,7 @@ public class RemoveLODsFromEditor
                             Object.DestroyImmediate(lodGroup, true);
                         }
 
-                        PrefabUtility.SaveAsPrefabAsset(
-                            prefabRoot, path);
-
+                        PrefabUtility.SaveAsPrefabAsset(prefabRoot, path);
                         modified = true;
                     }
                 }
@@ -65,7 +50,9 @@ public class RemoveLODsFromEditor
                 }
 
                 if (modified)
+                {
                     modifiedCount++;
+                }
             }
         }
         finally
@@ -75,11 +62,10 @@ public class RemoveLODsFromEditor
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-
         EditorUtility.DisplayDialog(
             "Remove LODs Complete",
-            $"Processed {total} prefabs.\n" +
-            $"Modified {modifiedCount} prefabs.",
-            "OK");
+            $"Processed {total} prefabs.\n" + $"Modified {modifiedCount} prefabs.",
+            "OK"
+        );
     }
 }

@@ -21,7 +21,6 @@ public class PlayerRagdollManager : NetworkBehaviour
 
     [Header("State")]
     public bool isRagdoll = false;
-
     private Coroutine wakeCoroutine;
 
     private void Start()
@@ -32,22 +31,20 @@ public class PlayerRagdollManager : NetworkBehaviour
     public void SetRagdoll(bool state)
     {
         if (!IsSpawned || !IsOwner)
+        {
             return;
+        }
 
         if (isRagdoll == state)
+        {
             return;
+        }
 
-        Vector3 wakePosition = state
-            ? Vector3.zero
-            : repositionPivot.position;
-
+        Vector3 wakePosition = state ? Vector3.zero : repositionPivot.position;
         SetRagdoll_RPC(state, wakePosition);
     }
 
-    [Rpc(
-        SendTo.Everyone,
-        InvokePermission = RpcInvokePermission.Owner
-    )]
+    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Owner)]
     public void SetRagdoll_RPC(bool state, Vector3 wakePosition)
     {
         if (wakeCoroutine != null)
@@ -69,10 +66,7 @@ public class PlayerRagdollManager : NetworkBehaviour
     private void EnableRagdoll()
     {
         // Position the ragdoll at the player's current position.
-        ragdollRigData.transform.SetPositionAndRotation(
-            root.position,
-            root.rotation
-        );
+        ragdollRigData.transform.SetPositionAndRotation(root.position, root.rotation);
 
         // Hide the normal character renderers.
         foreach (Renderer renderer in renderers)
@@ -85,7 +79,6 @@ public class PlayerRagdollManager : NetworkBehaviour
 
         // Copy the player's current pose.
         ragdollRigData.SyncRig(playerRigData);
-
         isRagdoll = true;
 
         // Only disable the camera belonging to this client.
@@ -95,44 +88,31 @@ public class PlayerRagdollManager : NetworkBehaviour
         }
 
         Physics.SyncTransforms();
-
         Debug.Log("Ragdoll Enabled");
     }
 
     private void DisableRagdoll(Vector3 wakePosition)
     {
         // Preserve the ragdoll's current world transform.
-        Vector3 ragdollWorldPos =
-            ragdollRigData.transform.position;
-
-        Quaternion ragdollWorldRot =
-            ragdollRigData.transform.rotation;
+        Vector3 ragdollWorldPos = ragdollRigData.transform.position;
+        Quaternion ragdollWorldRot = ragdollRigData.transform.rotation;
 
         // Move the player to the owner's supplied position.
         root.position = wakePosition;
 
         // Restore the ragdoll so moving its parent
         // doesn't move the ragdoll itself.
-        ragdollRigData.transform.SetPositionAndRotation(
-            ragdollWorldPos,
-            ragdollWorldRot
-        );
-
+        ragdollRigData.transform.SetPositionAndRotation(ragdollWorldPos, ragdollWorldRot);
         Physics.SyncTransforms();
 
         // Begin transitioning the ragdoll into the player pose.
         ragdollRigData.SetRigLerp(playerRigData);
-
-        wakeCoroutine = StartCoroutine(
-            WaitTillRagdollComplete()
-        );
+        wakeCoroutine = StartCoroutine(WaitTillRagdollComplete());
     }
 
     private IEnumerator WaitTillRagdollComplete()
     {
-        yield return new WaitUntil(
-            () => ragdollRigData._currentLerpData == null
-        );
+        yield return new WaitUntil(() => ragdollRigData._currentLerpData == null);
 
         // Restore the normal character renderers.
         foreach (Renderer renderer in renderers)
@@ -145,7 +125,6 @@ public class PlayerRagdollManager : NetworkBehaviour
 
         // Reset the ragdoll rig to match the player.
         ragdollRigData.SyncRig(playerRigData);
-
         isRagdoll = false;
 
         // Only reactivate the local player's camera.
@@ -155,7 +134,6 @@ public class PlayerRagdollManager : NetworkBehaviour
         }
 
         wakeCoroutine = null;
-
         Debug.Log("Ragdoll Disabled");
     }
 }

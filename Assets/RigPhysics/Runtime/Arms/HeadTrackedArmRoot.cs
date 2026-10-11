@@ -11,23 +11,43 @@ namespace MechLab
         public ConfigurableJoint shoulderJoint;
         [Tooltip("Authored shoulder position relative to the tracking floor, in metres.")]
         public Vector3 shoulderFromFloor;
-        [Min(.1f)] public float maximumRootSpeed = 8f;
+        [Min(.1f)]
+        public float maximumRootSpeed = 8f;
 
         public void CaptureAuthoredPose(ServoLimb arm)
         {
             limb = arm;
             shoulderFromFloor = arm.input.trackingSpace.InverseTransformPoint(arm.shoulder.position);
             foreach (var segment in arm.segments)
+            {
                 foreach (var joint in segment.GetComponents<ConfigurableJoint>())
-                    if (joint.connectedBody == arm.chassis) shoulderJoint = joint;
+                {
+                    if (joint.connectedBody == arm.chassis)
+                    {
+                        shoulderJoint = joint;
+                    }
+                }
+            }
         }
 
-        private void FixedUpdate() => Follow(Time.fixedDeltaTime);
+        private void FixedUpdate()
+        {
+            Follow(Time.fixedDeltaTime);
+        }
 
         public void Follow(float deltaTime)
         {
-            if (!limb || !shoulderJoint || !limb.input || !limb.input.headTracked
-                || !limb.input.trackingSpace || !limb.chassis || !limb.shoulder) return;
+            if (!limb
+                || !shoulderJoint
+                || !limb.input
+                || !limb.input.headTracked
+                || !limb.input.trackingSpace
+                || !limb.chassis
+                || !limb.shoulder)
+            {
+                return;
+            }
+
             Vector3 desired = limb.input.trackingSpace.TransformPoint(shoulderFromFloor + limb.input.HeadTranslation);
             Vector3 current = limb.chassis.transform.TransformPoint(shoulderJoint.connectedAnchor);
             Vector3 next = Vector3.MoveTowards(current, desired, maximumRootSpeed * Mathf.Max(0f, deltaTime));

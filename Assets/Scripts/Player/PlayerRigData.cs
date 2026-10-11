@@ -9,7 +9,7 @@ public class PlayerRigData : MonoBehaviour
 
     public void SyncRig(PlayerRigData _data)
     {
-        for(int i = 0; i < rigData.Length; i++)
+        for (int i = 0; i < rigData.Length; i++)
         {
             rigData[i].position = _data.rigData[i].position;
             rigData[i].rotation = _data.rigData[i].rotation;
@@ -20,12 +20,12 @@ public class PlayerRigData : MonoBehaviour
     {
         int unsafeCount = 0;
 
-        for(int i = 0; i < rigData.Length; i++)
+        for (int i = 0; i < rigData.Length; i++)
         {
             rigData[i].position = Vector3.Lerp(rigData[i].position, _data.rigData[i].position, _lerp);
             rigData[i].rotation = Quaternion.Lerp(rigData[i].rotation, _data.rigData[i].rotation, _lerp);
 
-            if(Vector3.Distance(rigData[i].position, _data.rigData[i].position) > lerpThreshold)
+            if (Vector3.Distance(rigData[i].position, _data.rigData[i].position) > lerpThreshold)
             {
                 unsafeCount++;
             }
@@ -43,10 +43,11 @@ public class PlayerRigData : MonoBehaviour
 
     public void SetRigidbodyStates(bool _state)
     {
-        for(int i = 0; i < rigData.Length; i++)
+        for (int i = 0; i < rigData.Length; i++)
         {
             Rigidbody rb = rigData[i].GetComponent<Rigidbody>();
-            if(rb != null)
+
+            if (rb != null)
             {
                 rb.isKinematic = !_state;
                 rb.useGravity = _state;
@@ -61,7 +62,7 @@ public class PlayerRigData : MonoBehaviour
 
     private void Update()
     {
-        if(_currentLerpData != null)
+        if (_currentLerpData != null)
         {
             SetRigidbodyStates(false);
             LerpToRig(_currentLerpData, Time.deltaTime * 15f);

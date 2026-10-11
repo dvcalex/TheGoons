@@ -22,6 +22,7 @@ namespace MechLab
             // and collisions between separate mech instances.
             Collider[] colliders = GetComponentsInChildren<Collider>(true);
             for (int i = 0; i < colliders.Length; i++)
+            {
                 for (int j = i + 1; j < colliders.Length; j++)
                 {
                     var a = colliders[i].attachedRigidbody;
@@ -29,21 +30,45 @@ namespace MechLab
                     bool fists = a && b && a != b && a.GetComponent<ServoLimb>() && b.GetComponent<ServoLimb>();
                     Physics.IgnoreCollision(colliders[i], colliders[j], !fists);
                 }
+            }
         }
 
         private void OnEnable()
         {
-            if (impacts == null) return;
-            foreach (ImpactResponseSolver impact in impacts) if (impact) impact.Resolved += Strike;
+            if (impacts == null)
+            {
+                return;
+            }
+
+            foreach (ImpactResponseSolver impact in impacts)
+            {
+                if (impact)
+                {
+                    impact.Resolved += Strike;
+                }
+            }
         }
 
         private void OnDisable()
         {
-            if (impacts == null) return;
-            foreach (ImpactResponseSolver impact in impacts) if (impact) impact.Resolved -= Strike;
+            if (impacts == null)
+            {
+                return;
+            }
+
+            foreach (ImpactResponseSolver impact in impacts)
+            {
+                if (impact)
+                {
+                    impact.Resolved -= Strike;
+                }
+            }
         }
 
-        private void Strike(StrikePacket packet) => onStrike.Invoke(packet.damage);
+        private void Strike(StrikePacket packet)
+        {
+            onStrike.Invoke(packet.damage);
+        }
 
         public void UseExternalInput(bool external)
         {

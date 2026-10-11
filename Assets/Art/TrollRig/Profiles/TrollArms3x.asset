@@ -1,0 +1,137 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9785440a59174417a2d7b3278c648fca, type: 3}
+  m_Name: TrollArms3x
+  m_EditorClassIdentifier: 
+  stepSeconds: 0.011111111
+  solverPasses: 16
+  velocityPasses: 6
+  lostPoseGrace: 0.1
+  trackingJumpDistance: 0.45
+  reacquireSeconds: 0.2
+  poseHistorySeconds: 0.09
+  maximumTrackingSpeed: 12
+  maximumTrackingSpin: 30
+  gripEngage: 0.75
+  gripDisengage: 0.55
+  handPositionScale: 4.5
+  trackingPivot: {x: 0, y: 1.4, z: 0}
+  shoulderFromFloor: {x: 0.55, y: 1.45, z: 0}
+  limbReach: 3.8999999
+  wristMass: 8
+  segmentMass: 6
+  segmentLength: 1.9499999
+  segmentRadius: 0.27
+  handRadius: 0.42000002
+  positionFrequency: 7
+  positionDampingRatio: 1
+  rotationFrequency: 8
+  rotationDampingRatio: 1
+  maximumServoForce: 10500
+  maximumServoTorque: 7200
+  armGravitySupport: 1
+  maximumArmSpeed: 36
+  maximumArmSpin: 25
+  armLinearDrag: 0.1
+  armAngularDrag: 0.8
+  targetSpeed: 30
+  targetSpinDegrees: 1000
+  limbLimitSpring: 36000
+  limbLimitDamping: 1080
+  shoulderAngleLimit: 90
+  elbowAngleLimit: 135
+  wristAngleLimit: 80
+  lockBodyRotation: 1
+  chassisMass: 160
+  bodyRadius: 0.45
+  bodyHeight: 1.7
+  bodyLinearDrag: 0.2
+  bodyAngularDrag: 2
+  uprightFrequency: 2
+  uprightDampingRatio: 1
+  maximumUprightTorque: 1400
+  maximumBodySpeed: 7
+  maximumBodySpin: 3
+  environmentLayers:
+    serializedVersion: 2
+    m_Bits: 1
+  hittableLayers:
+    serializedVersion: 2
+    m_Bits: 1
+  grabbableLayers:
+    serializedVersion: 2
+    m_Bits: 1
+  pullVelocityGain: 1.5
+  anchorPositionGain: 3
+  anchorControlBlend: 0.75
+  projectPullToSurface: 1
+  rotateSurfacePullToGround: 1
+  pullResponseSeconds: 0.12
+  maximumPullAcceleration: 14
+  maximumPullForce: 2300
+  maximumPullSpeed: 5
+  anchorBreakDistance: 1.9499999
+  verticalPulling: 0
+  strikeHistorySeconds: 0.06
+  minimumStrikeSpeed: 1.2
+  fullStrikeSpeed: 7
+  minimumSwingTravel: 0.08
+  rearmSpeed: 0.7
+  separationSeconds: 0.06
+  strikeCooldown: 0.22
+  strikePower: 1.6
+  maximumEffectiveMass: 45
+  impulseScale: 0.7
+  maximumExtraImpulse: 100
+  maximumTargetDeltaSpeed: 6
+  fullStrikeDamage: 25
+  damagePower: 1.2
+  recoverySeconds: 0.11
+  impactDriveFraction: 0.28
+  grabRadius: 0.69
+  maximumGrabMass: 50
+  grabFrequency: 9
+  grabDampingRatio: 1
+  maximumGrabForce: 7500
+  maximumGrabTorque: 8100
+  grabBreakError: 2.6999998
+  maximumThrowSpeed: 10
+  maximumThrowSpin: 20
+  throwBoost: 1
+  throwUsesFastestHistory: 1
+  throwHistorySeconds: 0.1
+  targetHealth: 100
+  staggerThreshold: 0.4
+  knockdownThreshold: 0.8
+  staggerSeconds: 0.5
+  knockdownSeconds: 1.5
+  enemyMaximumSpeed: 10
+  enemyMaximumSpin: 15
+  maximumHapticAmplitude: 0.85
+  hapticSeconds: 0.055
+  audioGain: 0.65
+  placeholderToneHz: 75
+  placeholderAudioDecay: 25
+  placeholderAudioSeconds: 0.2
+  flashSeconds: 0.06
+  telemetryHz: 30
+  demoStrokeMeters: 0.15
+  demoStrokeHz: 0.3
+  demoLeftPose: {x: -0.3, y: 1.25, z: 0.6}
+  demoRightPose: {x: 0.3, y: 1.25, z: 0.6}
+  demoPropMass: 5
+  demoPropMassStep: 10
+  demoEnemyBaseMass: 20
+  demoEnemyTorsoMass: 15
+  demoEnemyMotorInertia: 3
+  demoEnemyMotorHz: 3
+  demoEnemyMotorTorque: 200
