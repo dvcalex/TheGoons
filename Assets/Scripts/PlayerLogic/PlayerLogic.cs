@@ -5,8 +5,6 @@ using TMPro;
 
 public class PlayerLogic : MonoBehaviour
 {
-    public static PlayerLogic Instance;
-
     [System.Serializable]
     public class AbilityData
     {
@@ -31,12 +29,6 @@ public class PlayerLogic : MonoBehaviour
     [SerializeField] private Color readyColor = Color.white;
     [SerializeField] private Color activeColor = new Color(0.2f, 0.2f, 0.2f, 1f); // Dark gray while invisible
     [SerializeField] private Color cooldownColor = new Color(0.4f, 0.4f, 0.4f, 1f);
-
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-    }
 
     private void Start()
     {
