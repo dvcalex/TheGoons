@@ -28,7 +28,6 @@ public class NetworkPlayer : NetworkBehaviour
         }
 
         NetworkObject prefab;
-        Vector3 position = PlayerSpawn._instance.transform.position;
 
         // use vr player
         if (OwnerClientId == Unity.Netcode.NetworkManager.ServerClientId && !VR_Override)
@@ -48,7 +47,7 @@ public class NetworkPlayer : NetworkBehaviour
             false,
             true,
             false,
-            position,
+            Vector3.zero,
             Quaternion.identity
         );
 
