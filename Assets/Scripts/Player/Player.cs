@@ -1,7 +1,9 @@
-using UnityEngine;
-using Unity.Netcode;
-using UnityEngine.InputSystem;
 using EZCameraShake;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class Player : NetworkBehaviour
 {
@@ -42,6 +44,11 @@ public class Player : NetworkBehaviour
     [Header("Invisibility Renderers")]
     public SkinnedMeshRenderer[] stealthRenderers; // Drag your 4 skinned mesh renderers here in the Inspector
 
+    public Volume volume;
+
+    private Vignette vignette;
+
+
     private void Start()
     {
         if (IsOwner)
@@ -74,6 +81,11 @@ public class Player : NetworkBehaviour
         }
 
         Server._instance.ConnectPlayer_RPC(NetworkObjectId);
+
+        if (volume.profile.TryGet(out vignette))
+        {
+            vignette.intensity.overrideState = true;
+        }
     }
 
     public void InitOther()
@@ -225,6 +237,9 @@ public class Player : NetworkBehaviour
     {
         health.Value -= damage;
 
+        if(IsOwner)
+            SetVignette(1f - (Mathf.Clamp(health.Value, 0f, 100f) / 100f));
+
         if (health.Value <= 0f)
             SetDeathState_RPC(true);
     }
@@ -246,5 +261,13 @@ public class Player : NetworkBehaviour
             obj.SetActive(!state);
 
         _isDead = state;
+    }
+
+    public void SetVignette(float intensity)
+    {
+        if (vignette != null)
+        {
+            vignette.intensity.value = Mathf.Clamp01(intensity);
+        }
     }
 }

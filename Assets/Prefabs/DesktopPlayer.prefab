@@ -1301,6 +1301,7 @@ Transform:
   m_Children:
   - {fileID: 8815569425475547774}
   - {fileID: 5542696625938427774}
+  - {fileID: 7673719516871700108}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4947597367036679604
@@ -1414,6 +1415,7 @@ MonoBehaviour:
   - {fileID: 324043574605050184}
   - {fileID: 4529337466044385724}
   - {fileID: 5834000883334767304}
+  volume: {fileID: 6463501503290677103}
 --- !u!114 &5253568588033088183
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1447,6 +1449,55 @@ MonoBehaviour:
   readyColor: {r: 1, g: 1, b: 1, a: 1}
   activeColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   cooldownColor: {r: 0.4, g: 0.4, b: 0.4, a: 1}
+--- !u!1 &2901616186194869141
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7673719516871700108}
+  - component: {fileID: 6463501503290677103}
+  m_Layer: 6
+  m_Name: HurtVolume
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7673719516871700108
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2901616186194869141}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4060541841604489701}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6463501503290677103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2901616186194869141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: 4fb3210cd4b5d8f4cbb0b9351b5db388, type: 2}
 --- !u!1 &3774470223481614529
 GameObject:
   m_ObjectHideFlags: 0
