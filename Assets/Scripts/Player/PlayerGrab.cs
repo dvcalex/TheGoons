@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -5,6 +6,8 @@ using UnityEngine;
 public sealed class PlayerGrab : NetworkBehaviour
 {
     public float maximumThrowSpeed = 25f;
+    [Tooltip("Extra palm offset in hand local space. Scales with the VR rig.")]
+    public Vector3 palmOffset;
     public VrPidMotor followMotor = new VrPidMotor();
 
     public struct GrabState : INetworkSerializable
@@ -13,6 +16,7 @@ public sealed class PlayerGrab : NetworkBehaviour
         public NetworkObjectReference holder;
         public bool leftHand;
         public Vector3 handOffset;
+        public Quaternion bodyRotationOffset;
         public Vector3 releaseVelocity;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -21,6 +25,7 @@ public sealed class PlayerGrab : NetworkBehaviour
             serializer.SerializeValue(ref holder);
             serializer.SerializeValue(ref leftHand);
             serializer.SerializeValue(ref handOffset);
+            serializer.SerializeValue(ref bodyRotationOffset);
             serializer.SerializeValue(ref releaseVelocity);
         }
     }
@@ -29,6 +34,16 @@ public sealed class PlayerGrab : NetworkBehaviour
     private Player player;
     private VrPhysicsHand serverHand;
     private float nextHitTime;
+    private VrPhysicsHand collisionHand;
+    private float restoreCollisionsAt;
+    private readonly List<CollisionPair> ignoredCollisions = new List<CollisionPair>();
+
+    private struct CollisionPair
+    {
+        public Collider playerCollider;
+        public Collider handCollider;
+        public bool wasIgnored;
+    }
 
     public bool IsHeld
     {
@@ -56,7 +71,7 @@ public sealed class PlayerGrab : NetworkBehaviour
             return false;
         }
 
-        if (player._ragdollManager != null && player._ragdollManager.isRagdoll)
+        if (player._isDead || player._ragdollManager == null || player._ragdollManager.GrabBody == null)
         {
             return false;
         }
@@ -77,6 +92,8 @@ public sealed class PlayerGrab : NetworkBehaviour
             return false;
         }
 
+        // Copy the animated pose before measuring the torso's orientation in the hand.
+        player._ragdollManager.BeginGrabRagdoll();
         var holder = hand.GetComponentInParent<LocalVrPlayer>();
         serverHand = hand;
         state.Value = new GrabState
@@ -84,7 +101,8 @@ public sealed class PlayerGrab : NetworkBehaviour
             held = true,
             holder = new NetworkObjectReference(holder.NetworkObject),
             leftHand = hand == holder.GetHand(true),
-            handOffset = hand.transform.InverseTransformPoint(player._movement.rb.position)
+            handOffset = hand.grabPoint + palmOffset,
+            bodyRotationOffset = Quaternion.Inverse(hand.transform.rotation) * player._ragdollManager.GrabBody.rotation
         };
         return true;
     }
@@ -113,20 +131,33 @@ public sealed class PlayerGrab : NetworkBehaviour
     private void GrabChanged(GrabState previous, GrabState current)
     {
         followMotor.Reset();
+        if (current.held)
+        {
+            RestoreHandCollisions();
+            player._ragdollManager.BeginGrabRagdoll();
+        }
+        else if (previous.held)
+        {
+            // Give the thrown player a moment to leave the palm before colliding again.
+            restoreCollisionsAt = Time.time + 0.35f;
+            player._ragdollManager.SetReleaseVelocity(current.releaseVelocity);
+        }
+
         if (!IsOwner)
         {
             return;
         }
 
         player._movement.ClearGrabMovement();
-        if (previous.held && !current.held && !player._movement.rb.isKinematic)
-        {
-            player._movement.rb.linearVelocity = current.releaseVelocity;
-        }
     }
 
     private void FixedUpdate()
     {
+        if (!IsHeld && ignoredCollisions.Count > 0 && Time.time >= restoreCollisionsAt && HasClearedHand())
+        {
+            RestoreHandCollisions();
+        }
+
         if (!IsSpawned || !IsHeld)
         {
             return;
@@ -135,11 +166,6 @@ public sealed class PlayerGrab : NetworkBehaviour
         if (IsServer && (serverHand == null || !serverHand.isActiveAndEnabled || !serverHand.Tracked))
         {
             EndGrab(serverHand);
-            return;
-        }
-
-        if (!IsOwner || player._movement.rb.isKinematic)
-        {
             return;
         }
 
@@ -161,9 +187,82 @@ public sealed class PlayerGrab : NetworkBehaviour
             return;
         }
 
+        IgnoreHandCollisions(hand);
+        Rigidbody body = player._ragdollManager.GrabBody;
+        if (!IsOwner || body == null || body.isKinematic)
+        {
+            return;
+        }
+
         Vector3 target = hand.transform.TransformPoint(state.Value.handOffset);
-        Quaternion rotation = Quaternion.Euler(0f, player._movement.FacingYaw, 0f);
-        followMotor.Drive(player._movement.rb, target, rotation, 1f, hand.WorldScale);
+        // Hold the torso in the palm; joints let the head and limbs flop naturally.
+        Quaternion rotation = hand.transform.rotation * state.Value.bodyRotationOffset;
+        followMotor.Drive(body, target, rotation, 1f, hand.WorldScale);
+        player._ragdollManager.SupportGrabbedLimbs();
+    }
+
+    private void IgnoreHandCollisions(VrPhysicsHand hand)
+    {
+        if (collisionHand == hand)
+        {
+            return;
+        }
+
+        RestoreHandCollisions();
+        collisionHand = hand;
+        var playerColliders = GetComponentsInChildren<Collider>(true);
+        var handColliders = hand.GetComponentsInChildren<Collider>(true);
+        foreach (Collider playerCollider in playerColliders)
+        {
+            foreach (Collider handCollider in handColliders)
+            {
+                ignoredCollisions.Add(new CollisionPair
+                {
+                    playerCollider = playerCollider,
+                    handCollider = handCollider,
+                    wasIgnored = Physics.GetIgnoreCollision(playerCollider, handCollider)
+                });
+                Physics.IgnoreCollision(playerCollider, handCollider, true);
+            }
+        }
+    }
+
+    private void RestoreHandCollisions()
+    {
+        foreach (CollisionPair pair in ignoredCollisions)
+        {
+            if (pair.playerCollider != null && pair.handCollider != null)
+            {
+                Physics.IgnoreCollision(pair.playerCollider, pair.handCollider, pair.wasIgnored);
+            }
+        }
+
+        ignoredCollisions.Clear();
+        collisionHand = null;
+    }
+
+    private bool HasClearedHand()
+    {
+        foreach (CollisionPair pair in ignoredCollisions)
+        {
+            if (pair.playerCollider == null || pair.handCollider == null ||
+                !pair.playerCollider.enabled || !pair.handCollider.enabled)
+            {
+                continue;
+            }
+
+            Vector3 direction;
+            float distance;
+            if (Physics.ComputePenetration(
+                pair.playerCollider, pair.playerCollider.transform.position, pair.playerCollider.transform.rotation,
+                pair.handCollider, pair.handCollider.transform.position, pair.handCollider.transform.rotation,
+                out direction, out distance))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // Only host hand contacts can send a knockback to the movement owner.
@@ -181,10 +280,18 @@ public sealed class PlayerGrab : NetworkBehaviour
     [Rpc(SendTo.Owner, InvokePermission = RpcInvokePermission.Server)]
     private void HitOwnerRpc(Vector3 velocity)
     {
-        if (!IsHeld)
+        if (IsHeld)
         {
-            player._movement.AddKnockback(velocity.normalized, velocity.magnitude, true, 0.25f);
+            return;
         }
+
+        if (player._ragdollManager.isRagdoll)
+        {
+            player._ragdollManager.SetReleaseVelocity(player._ragdollManager.GrabBody.linearVelocity + velocity);
+            return;
+        }
+
+        player._movement.AddKnockback(velocity.normalized, velocity.magnitude, true, 0.25f);
     }
 
     public override void OnNetworkDespawn()
@@ -192,5 +299,12 @@ public sealed class PlayerGrab : NetworkBehaviour
         state.OnValueChanged -= GrabChanged;
         serverHand = null;
         followMotor.Reset();
+        RestoreHandCollisions();
+    }
+
+    private void OnDisable()
+    {
+        EndGrab(serverHand);
+        RestoreHandCollisions();
     }
 }
