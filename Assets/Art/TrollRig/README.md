@@ -12,6 +12,16 @@ Models contains the editable source FBX parts. Materials reuse Assets/Art/TrollH
 
 Validation: inspected a Unity render; both visual IK chains solved three wrist poses; rigidbody, collider and joint counts match the original rig. This is not a headset/play-mode physics validation.
 
+## Host_Player integration
+
+`Assets/Prefabs/Host_Player.prefab` contains a nested TrollRig instance. Its XR Origin is a child of the rig's TrackingFloor, at unit scale with a zero local pose. TrackingRootFollower carries the camera with the physical chassis; SurfacePullMotor retains the rig's existing hand-contact locomotion.
+
+OpenXRTransformInput on XR Origin reads Camera, Left Controller and Right Controller in Camera Offset space. Both PilotPoseStreams use scripted input in this instance, so the adapter is the only pose writer. Keep the tracked controllers enabled; their old placeholder cubes are disabled.
+
+LocalVrPlayer activates the physics rig and XR Origin only for the owner and hides the local head visual. Remote players still see the existing replicated head/hand markers; this integration does not replicate the physical troll limbs, grabs or effects. Use the existing host/network debug flow to spawn the player. Moving the Host_Player container during simulation is not a teleport procedure for its separate rigidbodies.
+
+Validation: C# build and serialized prefab-reference checks passed. Unity play-mode and headset tracking, contact, grip and camera comfort still need testing.
+
 ## Giant arms (3x)
 
 TrollRig now has upper-arm and forearm joint lengths of 1.95 m each (3.9 m total reach), 0.27 m arm collision radii, and 0.42 m fist collision radii. The physical and visual arms and hands are enlarged around their existing shoulder mounts. Root, chassis, head, tracking floor, and visual-bone scales are not globally enlarged. Spawn at unit root scale.

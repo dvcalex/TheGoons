@@ -6,6 +6,8 @@ using UnityEngine;
 public sealed class LocalVrPlayer : NetworkBehaviour
 {
     public XROrigin origin;
+    public GameObject trollRig;
+    public Transform localHeadVisual;
 
     public struct RigPose : INetworkSerializable
     {
@@ -46,6 +48,11 @@ public sealed class LocalVrPlayer : NetworkBehaviour
         {
             origin.gameObject.SetActive(false);
         }
+
+        if (trollRig != null)
+        {
+            trollRig.SetActive(false);
+        }
     }
 
     public override void OnNetworkSpawn()
@@ -55,7 +62,19 @@ public sealed class LocalVrPlayer : NetworkBehaviour
             return;
         }
 
+        // The local physics rig and tracking share the player's ownership lifecycle.
+        if (localHeadVisual != null && IsOwner)
+        {
+            localHeadVisual.gameObject.SetActive(false);
+        }
+
         origin.gameObject.SetActive(IsOwner);
+
+        if (trollRig != null)
+        {
+            trollRig.SetActive(IsOwner);
+        }
+
         var offset = origin.CameraFloorOffsetObject.transform;
         left = offset.Find("Left Controller");
         right = offset.Find("Right Controller");
@@ -140,6 +159,11 @@ public sealed class LocalVrPlayer : NetworkBehaviour
         if (origin != null)
         {
             origin.gameObject.SetActive(false);
+        }
+
+        if (trollRig != null)
+        {
+            trollRig.SetActive(false);
         }
     }
 }
