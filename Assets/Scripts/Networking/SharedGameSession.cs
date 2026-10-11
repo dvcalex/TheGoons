@@ -53,6 +53,7 @@ public sealed class SharedGameSession : MonoBehaviour
             if (root.GetComponent<NetworkObject>() != null
                 || root.GetComponent<PlayerData>() != null
                 || root.GetComponent<NetworkManager>() != null
+                || root.GetComponent<Unity.XR.CoreUtils.XROrigin>() != null
                 || root.GetComponent<AudioManager>() != null
                 || root.GetComponentInChildren<Canvas>(true) != null
                 || root.GetComponent<UnityEngine.EventSystems.EventSystem>() != null)

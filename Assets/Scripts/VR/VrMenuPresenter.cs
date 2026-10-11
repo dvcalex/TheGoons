@@ -97,7 +97,16 @@ public sealed class VrMenuPresenter : MonoBehaviour
         }
 
         // Clone only the tracking child, never the NetworkObject or gameplay scripts.
-        menuOrigin = Instantiate(template, Vector3.zero, Quaternion.identity);
+        VrSpawnPoint spawn = VrSpawnPoint.FindInScene(gameObject.scene);
+        Vector3 position = Vector3.zero;
+        Quaternion rotation = Quaternion.identity;
+        if (spawn != null)
+        {
+            position = spawn.transform.position;
+            rotation = Quaternion.Euler(0f, spawn.transform.eulerAngles.y, 0f);
+        }
+
+        menuOrigin = Instantiate(template, position, rotation);
         menuOrigin.name = "Local VR Menu Rig";
         menuOrigin.gameObject.SetActive(true);
         foreach (var collider in menuOrigin.GetComponentsInChildren<Collider>())
