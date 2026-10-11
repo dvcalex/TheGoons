@@ -58,6 +58,9 @@ public sealed class VrPhysicsHand : MonoBehaviour
     private FixedJoint grabJoint;
     private Rigidbody heldBody;
     private PlayerGrab heldPlayer;
+    private Vector3 smoothedThrowVelocity;
+    private Vector3 peakThrowVelocity;
+    private float peakThrowTime;
     private readonly Collider[] candidates = new Collider[24];
 
     private void Awake()
@@ -89,6 +92,9 @@ public sealed class VrPhysicsHand : MonoBehaviour
         {
             motor.Reset();
             authority = 0f;
+            smoothedThrowVelocity = Vector3.zero;
+            peakThrowVelocity = Vector3.zero;
+            peakThrowTime = 0f;
         }
 
         Tracked = tracked;
@@ -99,7 +105,7 @@ public sealed class VrPhysicsHand : MonoBehaviour
         {
             Grip = 0f;
             gripReleased = false;
-            Release();
+            Release(false);
         }
     }
 
@@ -112,7 +118,7 @@ public sealed class VrPhysicsHand : MonoBehaviour
         {
             Grip = 0f;
             gripReleased = false;
-            Release();
+            Release(false);
         }
 
         if (!Tracked)
@@ -123,6 +129,17 @@ public sealed class VrPhysicsHand : MonoBehaviour
         authority = Mathf.MoveTowards(authority, 1f, Time.fixedDeltaTime / 0.12f);
         motor.Drive(Body, TargetPosition, targetRotation, authority, WorldScale);
         Body.linearVelocity = Vector3.ClampMagnitude(Body.linearVelocity, maximumSpeed * WorldScale);
+
+        // Keep a short release history so opening the grip just after a flick still throws.
+        Vector3 palm = transform.TransformPoint(grabPoint);
+        Vector3 velocity = Body.GetPointVelocity(palm);
+        float blend = 1f - Mathf.Exp(-Time.fixedDeltaTime / 0.06f);
+        smoothedThrowVelocity = Vector3.Lerp(smoothedThrowVelocity, velocity, blend);
+        if (Time.time - peakThrowTime > 0.1f || smoothedThrowVelocity.sqrMagnitude >= peakThrowVelocity.sqrMagnitude)
+        {
+            peakThrowVelocity = smoothedThrowVelocity;
+            peakThrowTime = Time.time;
+        }
 
         if (canInteract && Grip < 0.3f)
         {
@@ -213,11 +230,24 @@ public sealed class VrPhysicsHand : MonoBehaviour
         grabJoint.enableCollision = false;
     }
 
-    private void Release()
+    public Vector3 GetThrowVelocity(Vector3 point)
+    {
+        Vector3 velocity = smoothedThrowVelocity;
+        if (Time.time - peakThrowTime <= 0.1f && Vector3.Dot(peakThrowVelocity, velocity) > 0f)
+        {
+            velocity = peakThrowVelocity;
+        }
+
+        // Include the rotational velocity of an offset grab point.
+        Vector3 palm = transform.TransformPoint(grabPoint);
+        return velocity + Vector3.Cross(Body.angularVelocity, point - palm);
+    }
+
+    private void Release(bool throwPlayer = true)
     {
         if (heldPlayer != null)
         {
-            heldPlayer.EndGrab(this);
+            heldPlayer.EndGrab(this, throwPlayer);
             heldPlayer = null;
         }
 
@@ -264,7 +294,7 @@ public sealed class VrPhysicsHand : MonoBehaviour
         authority = 0f;
         gripReleased = false;
         motor.Reset();
-        Release();
+        Release(false);
     }
 
     private void OnDrawGizmosSelected()

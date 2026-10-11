@@ -3,12 +3,14 @@ using Unity.Netcode;
 using UnityEngine;
 
 // The host chooses the hand. The desktop owner moves its existing networked body.
+[DefaultExecutionOrder(100)]
 public sealed class PlayerGrab : NetworkBehaviour
 {
-    public float maximumThrowSpeed = 25f;
+    [Header("Throwing")]
+    [Min(1f)] public float throwStrength = 1.8f;
+    [Min(0f)] public float maximumThrowSpeed = 55f;
     [Tooltip("Extra palm offset in hand local space. Scales with the VR rig.")]
     public Vector3 palmOffset;
-    public VrPidMotor followMotor = new VrPidMotor();
 
     public struct GrabState : INetworkSerializable
     {
@@ -36,6 +38,8 @@ public sealed class PlayerGrab : NetworkBehaviour
     private float nextHitTime;
     private VrPhysicsHand collisionHand;
     private float restoreCollisionsAt;
+    private bool snappedToHand;
+    private RigidbodyInterpolation torsoInterpolation;
     private readonly List<CollisionPair> ignoredCollisions = new List<CollisionPair>();
 
     private struct CollisionPair
@@ -112,7 +116,7 @@ public sealed class PlayerGrab : NetworkBehaviour
         return true;
     }
 
-    public void EndGrab(VrPhysicsHand hand)
+    public void EndGrab(VrPhysicsHand hand, bool throwPlayer = true)
     {
         if (!IsServer || !IsSpawned || !IsHeld || serverHand != hand)
         {
@@ -120,10 +124,10 @@ public sealed class PlayerGrab : NetworkBehaviour
         }
 
         Vector3 velocity = Vector3.zero;
-        if (hand != null && hand.Body != null)
+        if (throwPlayer && hand != null && hand.Tracked && hand.isActiveAndEnabled)
         {
             Vector3 point = hand.transform.TransformPoint(state.Value.handOffset);
-            velocity = hand.Body.GetPointVelocity(point);
+            velocity = CalculateThrowVelocity(hand.GetThrowVelocity(point));
         }
 
         state.Value = new GrabState
@@ -133,18 +137,37 @@ public sealed class PlayerGrab : NetworkBehaviour
         serverHand = null;
     }
 
+    public Vector3 CalculateThrowVelocity(Vector3 handVelocity)
+    {
+        // Small movements release gently; a deliberate swing gets the extra strength.
+        if (handVelocity.magnitude >= 2f)
+        {
+            handVelocity *= throwStrength;
+        }
+
+        return Vector3.ClampMagnitude(handVelocity, maximumThrowSpeed);
+    }
+
     private void GrabChanged(GrabState previous, GrabState current)
     {
-        followMotor.Reset();
+        snappedToHand = false;
         if (current.held)
         {
             RestoreHandCollisions();
             player._ragdollManager.BeginGrabRagdoll();
+            Rigidbody body = player._ragdollManager.GrabBody;
+            torsoInterpolation = body.interpolation;
+            body.interpolation = RigidbodyInterpolation.None;
+            body.isKinematic = true;
+            UpdateHeldPose();
         }
         else if (previous.held)
         {
             // Give the thrown player a moment to leave the palm before colliding again.
             restoreCollisionsAt = Time.time + 0.35f;
+            Rigidbody body = player._ragdollManager.GrabBody;
+            body.isKinematic = !IsOwner;
+            body.interpolation = torsoInterpolation;
             player._ragdollManager.SetReleaseVelocity(current.releaseVelocity);
         }
 
@@ -170,16 +193,30 @@ public sealed class PlayerGrab : NetworkBehaviour
 
         if (IsServer && (player._isDead || (GameManager._instance != null && !GameManager._instance.IsSeeking)))
         {
-            EndGrab(serverHand);
+            EndGrab(serverHand, false);
             return;
         }
 
         if (IsServer && (serverHand == null || !serverHand.isActiveAndEnabled || !serverHand.Tracked))
         {
-            EndGrab(serverHand);
+            EndGrab(serverHand, false);
             return;
         }
 
+        UpdateHeldPose();
+    }
+
+    private void LateUpdate()
+    {
+        // Run after remote hand interpolation so everyone sees the torso in the palm.
+        if (IsSpawned && IsHeld)
+        {
+            UpdateHeldPose();
+        }
+    }
+
+    private void UpdateHeldPose()
+    {
         NetworkObject holderObject;
         if (!state.Value.holder.TryGet(out holderObject, NetworkManager))
         {
@@ -200,16 +237,24 @@ public sealed class PlayerGrab : NetworkBehaviour
 
         IgnoreHandCollisions(hand);
         Rigidbody body = player._ragdollManager.GrabBody;
-        if (!IsOwner || body == null || body.isKinematic)
+        if (body == null)
         {
             return;
         }
 
         Vector3 target = hand.transform.TransformPoint(state.Value.handOffset);
-        // Hold the torso in the palm; joints let the head and limbs flop naturally.
         Quaternion rotation = hand.transform.rotation * state.Value.bodyRotationOffset;
-        followMotor.Drive(body, target, rotation, 1f, hand.WorldScale);
-        player._ragdollManager.SupportGrabbedLimbs();
+        if (!snappedToHand)
+        {
+            // Move every bone together once so grabbing does not stretch the ragdoll.
+            player._ragdollManager.SnapGrabPose(target, rotation);
+            snappedToHand = true;
+        }
+
+        // A kinematic torso is a hard anchor. The other bodies keep their normal joints.
+        body.isKinematic = true;
+        body.position = target;
+        body.rotation = rotation;
     }
 
     private void IgnoreHandCollisions(VrPhysicsHand hand)
@@ -320,13 +365,12 @@ public sealed class PlayerGrab : NetworkBehaviour
     {
         state.OnValueChanged -= GrabChanged;
         serverHand = null;
-        followMotor.Reset();
         RestoreHandCollisions();
     }
 
     private void OnDisable()
     {
-        EndGrab(serverHand);
+        EndGrab(serverHand, false);
         RestoreHandCollisions();
     }
 }

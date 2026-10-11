@@ -1521,15 +1521,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerGrab
   ShowTopMostFoldoutHeaderGroup: 1
-  maximumThrowSpeed: 25
+  throwStrength: 1.8
+  maximumThrowSpeed: 55
   palmOffset: {x: 0, y: 0, z: 0}
-  followMotor:
-    positionGain: 90
-    positionDamping: 18
-    rotationGain: 65
-    rotationDamping: 14
-    maximumAcceleration: 120
-    maximumAngularAcceleration: 100
 --- !u!1 &2901616186194869141
 GameObject:
   m_ObjectHideFlags: 0

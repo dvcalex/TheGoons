@@ -112,25 +112,38 @@ public class PlayerRagdollManager : NetworkBehaviour
             var body = bone.GetComponent<Rigidbody>();
             if (body != null && !body.isKinematic)
             {
+                body.maxLinearVelocity = Mathf.Max(body.maxLinearVelocity, velocity.magnitude);
                 body.linearVelocity = velocity;
+                body.angularVelocity = Vector3.zero;
             }
         }
     }
 
-    public void SupportGrabbedLimbs()
+    public void SnapGrabPose(Vector3 position, Quaternion rotation)
     {
-        float supportedMass = 0f;
-        foreach (Transform bone in ragdollRigData.rigData)
+        Rigidbody torso = GrabBody;
+        Quaternion turn = rotation * Quaternion.Inverse(torso.rotation);
+        Vector3 origin = torso.position;
+        Rigidbody[] bodies = ragdollObj.GetComponentsInChildren<Rigidbody>(true);
+        Vector3[] positions = new Vector3[bodies.Length];
+        Quaternion[] rotations = new Quaternion[bodies.Length];
+        for (int i = 0; i < bodies.Length; i++)
         {
-            var body = bone.GetComponent<Rigidbody>();
-            if (body != null && body != GrabBody && !body.isKinematic && body.useGravity)
-            {
-                supportedMass += body.mass;
-            }
+            positions[i] = position + turn * (bodies[i].position - origin);
+            rotations[i] = turn * bodies[i].rotation;
         }
 
-        // The torso motor cancels its own gravity; it also carries the hanging limbs.
-        GrabBody.AddForce(-Physics.gravity * supportedMass, ForceMode.Force);
+        // Snapshot first: moving a parent bone must not move a child twice.
+        for (int i = 0; i < bodies.Length; i++)
+        {
+            bodies[i].position = positions[i];
+            bodies[i].rotation = rotations[i];
+            if (!bodies[i].isKinematic)
+            {
+                bodies[i].linearVelocity = Vector3.zero;
+                bodies[i].angularVelocity = Vector3.zero;
+            }
+        }
     }
 
     private void FixedUpdate()
