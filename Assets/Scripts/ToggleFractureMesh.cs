@@ -18,14 +18,19 @@ public class ToggleFractureMesh : NetworkBehaviour
         fo_renderers = fracturedObject.GetComponentsInChildren<MeshRenderer>(true);
         self_renderer = gameObject.GetComponent<MeshRenderer>();
 
-        SetFracturedRenderers_RPC(false);
+        if(IsServer)
+            SetFracturedRenderers_RPC(false);
     }
 
     [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Server)]
     private void SetFracturedRenderers_RPC(bool enabled)
     {
         if (!IsServer)
-            self_renderer.enabled = false;
+        {
+            if(self_renderer != null)
+                self_renderer.enabled = false;
+        }
+           
 
         foreach (MeshRenderer r in fo_renderers)
         {
