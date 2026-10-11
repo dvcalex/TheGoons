@@ -45,7 +45,7 @@ public sealed class ScoutArms : MonoBehaviour
         arm.upperArm.position = rig.ShoulderPosition(side);
         float upperLength = Vector3.Distance(arm.upperArm.position, arm.forearm.position);
         float lowerLength = Vector3.Distance(arm.forearm.position, arm.hand.position);
-        Vector3 hint = arm.upperArm.position + rig.Facing * new Vector3(side * 2f, -1f, -1f);
+        Vector3 hint = arm.upperArm.position + rig.Facing * new Vector3(side * 2f, -1f, -1f) * rig.WorldScale;
         Vector3 elbow;
         Vector3 end;
         if (MechLab.TwoBoneIK.Solve(arm.upperArm.position, target.transform.position, hint,

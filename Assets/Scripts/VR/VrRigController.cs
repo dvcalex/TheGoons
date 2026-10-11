@@ -12,7 +12,7 @@ public sealed class VrRigController : MonoBehaviour
     public VrPhysicsHand rightHand;
     public VrPidMotor headMotor = new VrPidMotor();
 
-    [Header("Hand reach (world metres)")]
+    [Header("Hand reach (metres at scale 1)")]
     public float reachMultiplier = 5f;
     public float forwardReach = 2.5f;
     public float maximumReach = 7f;
@@ -25,6 +25,15 @@ public sealed class VrRigController : MonoBehaviour
     public float brakingAcceleration = 4f;
     public float stickDeadzone = 0.2f;
     public Vector3 floorOffset = new Vector3(0f, -0.85f, 0f);
+
+    // Use a uniform root scale. Distances and linear motion follow it automatically.
+    public float WorldScale
+    {
+        get
+        {
+            return Mathf.Abs(transform.lossyScale.x);
+        }
+    }
 
     public Quaternion Facing
     {
@@ -54,6 +63,10 @@ public sealed class VrRigController : MonoBehaviour
         physicalHead.interpolation = RigidbodyInterpolation.Interpolate;
         physicalHead.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         physicalHead.maxAngularVelocity = 25f;
+        physicalHead.maxLinearVelocity *= WorldScale;
+        chassis.maxLinearVelocity = Mathf.Max(chassis.maxLinearVelocity, travelSpeed * WorldScale);
+        chassis.maxDepenetrationVelocity = Physics.defaultMaxDepenetrationVelocity * WorldScale;
+        physicalHead.maxDepenetrationVelocity = Physics.defaultMaxDepenetrationVelocity * WorldScale;
 
         Collider[] colliders = GetComponentsInChildren<Collider>(true);
         for (int i = 0; i < colliders.Length; i++)
@@ -106,7 +119,7 @@ public sealed class VrRigController : MonoBehaviour
         }
 
         headAuthority = Mathf.MoveTowards(headAuthority, 1f, Time.fixedDeltaTime / 0.12f);
-        headMotor.Drive(physicalHead, trackingSpace.TransformPoint(headPosition), worldRotation, headAuthority);
+        headMotor.Drive(physicalHead, trackingSpace.TransformPoint(headPosition), worldRotation, headAuthority, WorldScale);
         var leftDevice = InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);
         DriveHand(leftHand, leftDevice, UnityEngine.InputSystem.XR.XRController.leftHand, -1f);
         DriveHand(rightHand, InputDevices.GetDeviceAtXRNode(XRNode.RightHand), UnityEngine.InputSystem.XR.XRController.rightHand, 1f);
@@ -115,12 +128,12 @@ public sealed class VrRigController : MonoBehaviour
 
     private void FollowChassis(Vector3 position)
     {
-        trackingFloor.SetPositionAndRotation(position + floorOffset, Quaternion.identity);
+        trackingFloor.SetPositionAndRotation(position + floorOffset * WorldScale, Quaternion.identity);
     }
 
     public Vector3 ShoulderPosition(float side)
     {
-        return physicalHead.transform.position + Facing * new Vector3(side * shoulderWidth, -shoulderDrop, 0f);
+        return physicalHead.transform.position + Facing * new Vector3(side * shoulderWidth, -shoulderDrop, 0f) * WorldScale;
     }
 
     private void DriveHand(VrPhysicsHand hand, InputDevice device, UnityEngine.InputSystem.XR.XRController controller, float side)
@@ -143,9 +156,9 @@ public sealed class VrRigController : MonoBehaviour
         device.TryGetFeatureValue(CommonUsages.grip, out float grip);
         Vector3 headWorld = trackingSpace.TransformPoint(headPosition);
         Vector3 offset = trackingSpace.TransformVector(position - headPosition) * reachMultiplier;
-        Vector3 target = headWorld + offset + Facing * Vector3.forward * forwardReach;
+        Vector3 target = headWorld + offset + Facing * Vector3.forward * forwardReach * WorldScale;
         Vector3 shoulder = ShoulderPosition(side);
-        target = shoulder + Vector3.ClampMagnitude(target - shoulder, maximumReach);
+        target = shoulder + Vector3.ClampMagnitude(target - shoulder, maximumReach * WorldScale);
         Quaternion handRotation = trackingSpace.rotation * rotation * Quaternion.Euler(hand.controllerRotationOffset);
         hand.SetTarget(target, handRotation, grip, valid);
     }
@@ -173,14 +186,14 @@ public sealed class VrRigController : MonoBehaviour
             return;
         }
 
-        Vector3 desired = viewRotation * new Vector3(stick.x, 0f, stick.y) * travelSpeed;
+        Vector3 desired = viewRotation * new Vector3(stick.x, 0f, stick.y) * travelSpeed * WorldScale;
         float acceleration = travelAcceleration;
         if (stick.sqrMagnitude < 0.001f)
         {
             acceleration = brakingAcceleration;
         }
 
-        Vector3 force = Vector3.ClampMagnitude((desired - chassis.linearVelocity) / 0.35f, acceleration);
+        Vector3 force = Vector3.ClampMagnitude((desired - chassis.linearVelocity) / 0.35f, acceleration * WorldScale);
         if (chassis.useGravity)
         {
             force -= Physics.gravity;

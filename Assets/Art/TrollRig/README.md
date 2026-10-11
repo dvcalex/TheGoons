@@ -20,9 +20,9 @@ Left thumbstick travels along the headset's forward/right plane, including up/do
 
 Y toggles the shared VR UI. B requests runtime tracking recenter and repositions the menu; support depends on the headset's tracking mode. These actions are provided by VrMenuPresenter in the normal startup flow.
 
-Tune reach, forward offset and movement on VrRigController. Tune force response on VrPhysicsHand.motor. The root uses unit scale; change these explicit reach settings instead of scaling the XR Origin hierarchy.
+Tune reach, forward offset and movement on VrRigController. Tune force response on VrPhysicsHand.motor. Distances and linear motion settings are authored at scale 1 and automatically follow the TrollRig root scale.
 
-Hands use 5x head-relative reach plus a 2.5 m forward offset, limited to 7 m from each shoulder. A controller 0.4 m ahead of your head requests roughly 4.5 m of forward reach. Both hands use the same mapping, so there are no mirrored lateral offsets that cross them.
+At scale 1, hands use 5x head-relative reach plus a 2.5 m forward offset, limited to 7 m from each shoulder. A controller 0.4 m ahead of your head requests roughly 4.5 m of forward reach. Both hands use the same mapping, so there are no mirrored lateral offsets that cross them.
 
 ## Scout arm asset
 
@@ -37,3 +37,13 @@ Validated in Unity: four rigidbodies, no permanent arm joints, intact Host_Playe
 Select LeftFist or RightFist in TrollRig prefab isolation. On VrPhysicsHand, Use Controller Aim makes the open fingers follow the same pointing direction as the controller ray. Controller Rotation Offset adds pitch/yaw/roll in that frame; change it to tune your controller grip. The offset rotates the Rigidbody target, collider and visual together. The baked Scout handRotationOffset only converts the model's bone axes and should normally stay unchanged.
 
 Each hand has a forward-facing capsule covering its palm and knuckle region instead of a wrist-centred sphere. Grab Point is inside the palm; the yellow selection gizmo shows its search radius, and the cyan ray shows physical hand forward. Grabs select the closest prop surface to the palm and anchor both bodies at that contact without snapping the prop to the wrist. Contacted props remain within grab range with the current defaults. Individual fingers are visual, not separate physics colliders.
+
+## Scaling in the editor
+
+Open `Assets/Prefabs/TrollRig.prefab` in prefab isolation, select the root, and set Transform Scale X, Y and Z to the same positive value. The current scale is **12, 12, 12**. Keep Host_Player and the XR Origin at local scale 1; the nested rig supplies the scale. Change scale before entering Play mode, rather than resizing active Rigidbody bodies. Scene instances with scale overrides must have those overrides reverted to inherit the prefab scale.
+
+Mesh geometry, arm bones, colliders, local palm anchors and tracked poses inherit the transform scale. Runtime code scales shoulder/floor offsets, forward reach, reach limits, slew speed/acceleration, linear PID acceleration limits, hand speed, grab radius, contact effects, UI size/distance/rays and remote pose markers. Do not multiply the Inspector tuning values again. The dimensionless 5x reach multiplier, rotation settings, grip thresholds and timing stay unchanged. At scale 12, the 2.5 m forward bias becomes 30 world metres and the 7 m shoulder reach limit becomes 84 world metres.
+
+Body masses and maximum grabbable mass intentionally retain their gameplay tuning; scaling does not apply a 1728x density-based mass increase. Grab break force scales linearly with acceleration and break torque quadratically with acceleration and lever length. Unity recalculates automatic inertia from the enlarged colliders. Gravity stays at the world's gravity.
+
+Uniform root scaling is required: nonuniform or negative scale is not supported. Unity's Transform alone cannot scale scripted world-space distances, which is why those values explicitly read the rig's scale. No additional editor component is required.

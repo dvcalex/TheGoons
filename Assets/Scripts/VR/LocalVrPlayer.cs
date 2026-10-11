@@ -109,7 +109,13 @@ public sealed class LocalVrPlayer : NetworkBehaviour
         var marker = GameObject.CreatePrimitive(type);
         marker.name = label;
         marker.transform.SetParent(transform, false);
-        marker.transform.localScale = size;
+        float rigScale = 1f;
+        if (trollRig != null)
+        {
+            rigScale = Mathf.Abs(trollRig.transform.localScale.x);
+        }
+
+        marker.transform.localScale = size * rigScale;
         // Host physics handles gameplay contacts; remote markers are presentation only.
         var collider = marker.GetComponent<Collider>();
         collider.enabled = false;

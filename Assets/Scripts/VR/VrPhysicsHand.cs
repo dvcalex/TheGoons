@@ -19,6 +19,15 @@ public sealed class VrPhysicsHand : MonoBehaviour
     public float grabBreakForce = 5000f;
     public float maximumSpeed = 25f;
 
+    // Hand transforms have unit local scale inside the uniformly scaled rig.
+    public float WorldScale
+    {
+        get
+        {
+            return Mathf.Abs(transform.lossyScale.x);
+        }
+    }
+
     public Rigidbody Body
     {
         get;
@@ -58,6 +67,8 @@ public sealed class VrPhysicsHand : MonoBehaviour
         Body.solverIterations = 12;
         Body.solverVelocityIterations = 4;
         Body.maxAngularVelocity = 25f;
+        Body.maxLinearVelocity = Mathf.Max(Body.maxLinearVelocity, maximumSpeed * WorldScale);
+        Body.maxDepenetrationVelocity = Physics.defaultMaxDepenetrationVelocity * WorldScale;
     }
 
     public void SetTarget(Vector3 position, Quaternion rotation, float grip, bool tracked)
@@ -88,8 +99,8 @@ public sealed class VrPhysicsHand : MonoBehaviour
         }
 
         authority = Mathf.MoveTowards(authority, 1f, Time.fixedDeltaTime / 0.12f);
-        motor.Drive(Body, TargetPosition, targetRotation, authority);
-        Body.linearVelocity = Vector3.ClampMagnitude(Body.linearVelocity, maximumSpeed);
+        motor.Drive(Body, TargetPosition, targetRotation, authority, WorldScale);
+        Body.linearVelocity = Vector3.ClampMagnitude(Body.linearVelocity, maximumSpeed * WorldScale);
 
         if (Grip < 0.3f)
         {
@@ -116,7 +127,7 @@ public sealed class VrPhysicsHand : MonoBehaviour
         }
 
         Vector3 palm = transform.TransformPoint(grabPoint);
-        int count = Physics.OverlapSphereNonAlloc(palm, grabRadius, candidates, grabbableLayers, QueryTriggerInteraction.Ignore);
+        int count = Physics.OverlapSphereNonAlloc(palm, grabRadius * WorldScale, candidates, grabbableLayers, QueryTriggerInteraction.Ignore);
         float nearestDistance = float.PositiveInfinity;
         Rigidbody nearest = null;
         Vector3 contactPoint = palm;
@@ -157,8 +168,8 @@ public sealed class VrPhysicsHand : MonoBehaviour
         grabJoint.anchor = heldBody.transform.InverseTransformPoint(contactPoint);
         grabJoint.connectedBody = Body;
         grabJoint.connectedAnchor = transform.InverseTransformPoint(contactPoint);
-        grabJoint.breakForce = grabBreakForce;
-        grabJoint.breakTorque = grabBreakForce;
+        grabJoint.breakForce = grabBreakForce * WorldScale;
+        grabJoint.breakTorque = grabBreakForce * WorldScale * WorldScale;
         grabJoint.enableCollision = false;
     }
 
@@ -186,8 +197,8 @@ public sealed class VrPhysicsHand : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.TransformPoint(grabPoint), grabRadius);
+        Gizmos.DrawWireSphere(transform.TransformPoint(grabPoint), grabRadius * WorldScale);
         Gizmos.color = Color.cyan;
-        Gizmos.DrawRay(transform.position, transform.forward);
+        Gizmos.DrawRay(transform.position, transform.forward * WorldScale);
     }
 }

@@ -125,9 +125,14 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
             forward = Vector3.forward;
         }
 
+        float viewerScale = Mathf.Abs(Viewer.transform.lossyScale.x);
+        float panelScale = widthMetres * viewerScale / Mathf.Max(1f, referenceResolution.x);
+        rect.localScale = Vector3.one * panelScale;
+        raycaster.maxDistance = 10f * viewerScale;
+
         forward.Normalize();
         rect.SetPositionAndRotation(
-            Viewer.transform.position + forward * distanceMetres + Vector3.up * heightOffset,
+            Viewer.transform.position + (forward * distanceMetres + Vector3.up * heightOffset) * viewerScale,
             Quaternion.LookRotation(forward, Vector3.up)
         );
     }

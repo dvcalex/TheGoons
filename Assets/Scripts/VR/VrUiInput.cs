@@ -255,11 +255,16 @@ public sealed class VrUiInput : MonoBehaviour
                 continue;
             }
 
+            float scale = Mathf.Abs(TrackingSpace.lossyScale.x);
+            rays[index].startWidth = 0.002f * scale;
+            rays[index].endWidth = 0.001f * scale;
+            dots[index].localScale = Vector3.one * 0.012f * scale;
+
             Vector3 end = hit.worldPosition;
             rays[index].SetPosition(0, start);
             rays[index].SetPosition(1, end);
             rays[index].enabled = true;
-            dots[index].position = end - orientation * Vector3.forward * 0.005f;
+            dots[index].position = end - orientation * Vector3.forward * 0.005f * scale;
             dots[index].gameObject.SetActive(true);
             break;
         }

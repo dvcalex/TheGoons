@@ -29,7 +29,7 @@ namespace TrollPresentation
                 return;
             }
 
-            if (contact.relativeVelocity.sqrMagnitude < minimumSpeed * minimumSpeed)
+            if (contact.relativeVelocity.sqrMagnitude < Mathf.Pow(minimumSpeed * limb.WorldScale, 2f))
             {
                 return;
             }
@@ -89,14 +89,22 @@ namespace TrollPresentation
                 }
             }
 
+            float scale = 1f;
+            if (limb != null)
+            {
+                scale = limb.WorldScale;
+            }
+
             instance.SetActive(true);
             instance.transform.SetPositionAndRotation(
-                point + normal * 0.025f,
+                point + normal * 0.025f * scale,
                 Quaternion.FromToRotation(effectDirection, normal));
-            instance.transform.localScale = Vector3.one * effectScale;
+            instance.transform.localScale = Vector3.one * effectScale * scale;
 
             foreach (ParticleSystem particles in instance.GetComponentsInChildren<ParticleSystem>())
             {
+                var main = particles.main;
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
                 particles.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
                 particles.Play(false);
             }

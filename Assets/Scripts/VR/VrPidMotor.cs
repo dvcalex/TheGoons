@@ -25,17 +25,18 @@ public sealed class VrPidMotor
         }
     }
 
-    public void Drive(Rigidbody body, Vector3 target, Quaternion rotation, float authority)
+    public void Drive(Rigidbody body, Vector3 target, Quaternion rotation, float authority, float spatialScale = 1f)
     {
         float dt = Time.fixedDeltaTime;
+        float accelerationLimit = maximumAcceleration * spatialScale;
         Vector3 force = Vector3.zero;
         for (int i = 0; i < 3; i++)
         {
-            Configure(axes[i], positionGain, positionDamping, maximumAcceleration);
+            Configure(axes[i], positionGain, positionDamping, accelerationLimit);
             force[i] = axes[i].Update(dt, body.position[i], target[i]);
         }
 
-        force = Vector3.ClampMagnitude(force, maximumAcceleration) * authority;
+        force = Vector3.ClampMagnitude(force, accelerationLimit) * authority;
         if (body.useGravity)
         {
             force -= Physics.gravity * authority;
