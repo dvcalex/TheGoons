@@ -11,18 +11,30 @@ public sealed class VrUiInput : MonoBehaviour
 {
     public InputSystemUIInputModule inputModule;
     public Material pointerMaterial;
-    public Transform TrackingSpace { get; private set; }
-    public bool Active { get; private set; }
 
-    InputActionAsset originalActions, runtimeActions;
-    Transform originalOrigin;
-    UIPointerBehavior originalPointerBehavior;
-    InputActionReference[] originalReferences, runtimeReferences;
-    readonly List<RaycastResult> hits = new List<RaycastResult>();
-    readonly LineRenderer[] rays = new LineRenderer[2];
-    readonly Transform[] dots = new Transform[2];
-    ExtendedPointerEventData pointer;
-    EventSystem eventSystem;
+    public Transform TrackingSpace
+    {
+        get;
+        private set;
+    }
+
+    public bool Active
+    {
+        get;
+        private set;
+    }
+
+    private InputActionAsset originalActions;
+    private InputActionAsset runtimeActions;
+    private Transform originalOrigin;
+    private UIPointerBehavior originalPointerBehavior;
+    private InputActionReference[] originalReferences;
+    private InputActionReference[] runtimeReferences;
+    private readonly List<RaycastResult> hits = new List<RaycastResult>();
+    private readonly LineRenderer[] rays = new LineRenderer[2];
+    private readonly Transform[] dots = new Transform[2];
+    private ExtendedPointerEventData pointer;
+    private EventSystem eventSystem;
 
     public void Activate(Transform trackingSpace)
     {
@@ -32,8 +44,12 @@ public sealed class VrUiInput : MonoBehaviour
             inputModule.xrTrackingOrigin = trackingSpace;
             return;
         }
+
         if (inputModule == null || inputModule.actionsAsset == null)
+        {
             throw new System.InvalidOperationException("VR UI requires the scene's configured InputSystemUIInputModule.");
+        }
+
         originalActions = inputModule.actionsAsset;
         originalReferences = References();
         originalOrigin = inputModule.xrTrackingOrigin;
@@ -42,62 +58,126 @@ public sealed class VrUiInput : MonoBehaviour
         runtimeActions.name = "Local VR menu input";
         runtimeActions.Disable();
         // Work on a private copy: desktop/shared project action assets remain untouched.
-        SetPoseBinding(runtimeActions.FindAction(inputModule.trackedDevicePosition.action.id), "<XRController>/pointerPosition");
-        SetPoseBinding(runtimeActions.FindAction(inputModule.trackedDeviceOrientation.action.id), "<XRController>/pointerRotation");
+        SetPoseBinding(
+            runtimeActions.FindAction(inputModule.trackedDevicePosition.action.id),
+            "<XRController>/pointerPosition"
+        );
+        SetPoseBinding(
+            runtimeActions.FindAction(inputModule.trackedDeviceOrientation.action.id),
+            "<XRController>/pointerRotation"
+        );
         var click = runtimeActions.FindAction(inputModule.leftClick.action.id);
         for (int i = click.bindings.Count - 1; i >= 0; --i)
-            if (click.bindings[i].path.Contains("XRController")) click.ChangeBinding(i).Erase();
+        {
+            if (click.bindings[i].path.Contains("XRController"))
+            {
+                click.ChangeBinding(i).Erase();
+            }
+        }
+
         click.AddBinding("<XRController>/triggerPressed");
         inputModule.actionsAsset = runtimeActions;
         runtimeReferences = References();
         inputModule.xrTrackingOrigin = trackingSpace;
         inputModule.pointerBehavior = UIPointerBehavior.AllPointersAsIs;
         eventSystem = inputModule.GetComponent<EventSystem>();
-        pointer = new ExtendedPointerEventData(eventSystem) { pointerType = UIPointerType.Tracked };
+        pointer = new ExtendedPointerEventData(eventSystem)
+        {
+            pointerType = UIPointerType.Tracked
+        };
         Active = true;
         CreateVisuals();
     }
 
-    static void SetPoseBinding(InputAction action, string path)
+    private static void SetPoseBinding(InputAction action, string path)
     {
-        for (int i = action.bindings.Count - 1; i >= 0; --i) action.ChangeBinding(i).Erase();
+        for (int i = action.bindings.Count - 1; i >= 0; --i)
+        {
+            action.ChangeBinding(i).Erase();
+        }
+
         action.AddBinding(path);
     }
 
-    InputActionReference[] References() => new[] { inputModule.point, inputModule.move, inputModule.submit,
-        inputModule.cancel, inputModule.leftClick, inputModule.rightClick, inputModule.middleClick,
-        inputModule.scrollWheel, inputModule.trackedDevicePosition, inputModule.trackedDeviceOrientation };
+    private InputActionReference[] References()
+    {
+        return new[]
+        {
+            inputModule.point,
+            inputModule.move,
+            inputModule.submit,
+            inputModule.cancel,
+            inputModule.leftClick,
+            inputModule.rightClick,
+            inputModule.middleClick,
+            inputModule.scrollWheel,
+            inputModule.trackedDevicePosition,
+            inputModule.trackedDeviceOrientation
+        };
+    }
 
     public void Deactivate()
     {
-        if (!Active) return;
+        if (!Active)
+        {
+            return;
+        }
+
         Active = false;
         if (inputModule != null)
         {
             inputModule.actionsAsset = originalActions;
             // Restore the exact references rather than retaining references generated by the asset setter.
             var generated = References();
-            inputModule.point = originalReferences[0]; inputModule.move = originalReferences[1];
-            inputModule.submit = originalReferences[2]; inputModule.cancel = originalReferences[3];
-            inputModule.leftClick = originalReferences[4]; inputModule.rightClick = originalReferences[5];
-            inputModule.middleClick = originalReferences[6]; inputModule.scrollWheel = originalReferences[7];
-            inputModule.trackedDevicePosition = originalReferences[8]; inputModule.trackedDeviceOrientation = originalReferences[9];
-            foreach (var reference in generated) if (reference != null && System.Array.IndexOf(originalReferences, reference) < 0) Destroy(reference);
+            inputModule.point = originalReferences[0];
+            inputModule.move = originalReferences[1];
+            inputModule.submit = originalReferences[2];
+            inputModule.cancel = originalReferences[3];
+            inputModule.leftClick = originalReferences[4];
+            inputModule.rightClick = originalReferences[5];
+            inputModule.middleClick = originalReferences[6];
+            inputModule.scrollWheel = originalReferences[7];
+            inputModule.trackedDevicePosition = originalReferences[8];
+            inputModule.trackedDeviceOrientation = originalReferences[9];
+            foreach (var reference in generated)
+            {
+                if (reference != null && System.Array.IndexOf(originalReferences, reference) < 0)
+                {
+                    Destroy(reference);
+                }
+            }
+
             inputModule.xrTrackingOrigin = originalOrigin;
             inputModule.pointerBehavior = originalPointerBehavior;
         }
+
         runtimeActions.Disable();
         Destroy(runtimeActions);
-        foreach (var reference in runtimeReferences) if (reference != null) Destroy(reference);
+        foreach (var reference in runtimeReferences)
+        {
+            if (reference != null)
+            {
+                Destroy(reference);
+            }
+        }
+
         for (int i = 0; i < rays.Length; i++)
         {
-            if (rays[i] != null) Destroy(rays[i].gameObject);
-            if (dots[i] != null) Destroy(dots[i].gameObject);
+            if (rays[i] != null)
+            {
+                Destroy(rays[i].gameObject);
+            }
+
+            if (dots[i] != null)
+            {
+                Destroy(dots[i].gameObject);
+            }
         }
+
         TrackingSpace = null;
     }
 
-    void CreateVisuals()
+    private void CreateVisuals()
     {
         for (int i = 0; i < rays.Length; i++)
         {
@@ -128,21 +208,33 @@ public sealed class VrUiInput : MonoBehaviour
         }
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
-        if (!Active || TrackingSpace == null) return;
+        if (!Active || TrackingSpace == null)
+        {
+            return;
+        }
+
         DrawPointer(0, XRController.leftHand);
         DrawPointer(1, XRController.rightHand);
     }
 
-    void DrawPointer(int index, XRController controller)
+    private void DrawPointer(int index, XRController controller)
     {
         var position = controller?.TryGetChildControl<Vector3Control>("pointerPosition");
         var rotation = controller?.TryGetChildControl<QuaternionControl>("pointerRotation");
-        bool valid = Application.isFocused && controller != null && controller.isTracked.isPressed && position != null && rotation != null;
+        bool valid = Application.isFocused
+            && controller != null
+            && controller.isTracked.isPressed
+            && position != null
+            && rotation != null;
         rays[index].enabled = valid;
         dots[index].gameObject.SetActive(false);
-        if (!valid) return;
+        if (!valid)
+        {
+            return;
+        }
+
         Vector3 start = TrackingSpace.TransformPoint(position.ReadValue());
         Quaternion orientation = TrackingSpace.rotation * rotation.ReadValue();
         pointer.device = controller;
@@ -153,15 +245,23 @@ public sealed class VrUiInput : MonoBehaviour
         Vector3 end = start + orientation * Vector3.forward * 3;
         foreach (var hit in hits)
         {
-            if (!(hit.module is TrackedDeviceRaycaster)) continue;
+            if (!(hit.module is TrackedDeviceRaycaster))
+            {
+                continue;
+            }
+
             end = hit.worldPosition;
             dots[index].position = end - orientation * Vector3.forward * 0.005f;
             dots[index].gameObject.SetActive(true);
             break;
         }
+
         rays[index].SetPosition(0, start);
         rays[index].SetPosition(1, end);
     }
 
-    void OnDisable() => Deactivate();
+    private void OnDisable()
+    {
+        Deactivate();
+    }
 }

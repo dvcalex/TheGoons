@@ -8,11 +8,24 @@ namespace MechLab
         public Rigidbody body;
         public Vector3 floorOffset;
         public bool yawOnly;
-        private void Update() => Follow(false);
-        private void FixedUpdate() => Follow(true);
+
+        private void Update()
+        {
+            Follow(false);
+        }
+
+        private void FixedUpdate()
+        {
+            Follow(true);
+        }
+
         private void Follow(bool physicsStep)
         {
-            if (!body) return;
+            if (!body)
+            {
+                return;
+            }
+
             // This is a tracking-space transform with no rigidbody; the dynamic hull is untouched.
             // Physics targets use the current simulation pose; rendering uses Unity's
             // interpolated transform for both position and yaw, avoiding mixed-frame jitter.

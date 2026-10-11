@@ -7,27 +7,48 @@ using UnityEngine.UI;
 public sealed class SharedWorldSpaceCanvas : MonoBehaviour
 {
     public Vector2 referenceResolution = new Vector2(1920, 1080);
-    [Min(0.2f)] public float widthMetres = 1.6f;
-    [Min(0.3f)] public float distanceMetres = 1.5f;
+    [Min(0.2f)]
+    public float widthMetres = 1.6f;
+    [Min(0.3f)]
+    public float distanceMetres = 1.5f;
     public float heightOffset = -0.1f;
 
-    public bool IsWorldSpace { get; private set; }
-    public Camera Viewer { get; private set; }
-    Canvas canvas;
-    RectTransform rect;
-    CanvasScaler scaler;
-    TrackedDeviceRaycaster raycaster;
-    RenderMode originalMode;
-    Camera originalCamera;
-    Vector3 originalPosition, originalScale;
-    Quaternion originalRotation;
-    Vector2 originalSize, originalAnchorMin, originalAnchorMax, originalPivot;
-    bool originalScalerEnabled, originalRaycasterEnabled;
-    float originalScaleFactor;
+    public bool IsWorldSpace
+    {
+        get;
+        private set;
+    }
+
+    public Camera Viewer
+    {
+        get;
+        private set;
+    }
+
+    private Canvas canvas;
+    private RectTransform rect;
+    private CanvasScaler scaler;
+    private TrackedDeviceRaycaster raycaster;
+    private RenderMode originalMode;
+    private Camera originalCamera;
+    private Vector3 originalPosition;
+    private Vector3 originalScale;
+    private Quaternion originalRotation;
+    private Vector2 originalSize;
+    private Vector2 originalAnchorMin;
+    private Vector2 originalAnchorMax;
+    private Vector2 originalPivot;
+    private bool originalScalerEnabled;
+    private bool originalRaycasterEnabled;
+    private float originalScaleFactor;
 
     public void Present(Camera viewer)
     {
-        if (viewer == null) return;
+        if (viewer == null)
+        {
+            return;
+        }
+
         if (!IsWorldSpace)
         {
             canvas = GetComponent<Canvas>();
@@ -44,10 +65,18 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
             originalPivot = rect.pivot;
             originalScaleFactor = canvas.scaleFactor;
             originalScalerEnabled = scaler != null && scaler.enabled;
-            if (scaler != null) scaler.enabled = false;
+            if (scaler != null)
+            {
+                scaler.enabled = false;
+            }
+
             raycaster = GetComponent<TrackedDeviceRaycaster>();
             originalRaycasterEnabled = raycaster != null && raycaster.enabled;
-            if (raycaster == null) raycaster = gameObject.AddComponent<TrackedDeviceRaycaster>();
+            if (raycaster == null)
+            {
+                raycaster = gameObject.AddComponent<TrackedDeviceRaycaster>();
+            }
+
             raycaster.checkFor3DOcclusion = false;
             raycaster.checkFor2DOcclusion = false;
             raycaster.maxDistance = 10;
@@ -61,6 +90,7 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
             rect.localScale = Vector3.one * scale;
             IsWorldSpace = true;
         }
+
         Viewer = viewer;
         canvas.worldCamera = viewer;
         Recenter();
@@ -69,17 +99,31 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
     [ContextMenu("Recenter VR panel")]
     public void Recenter()
     {
-        if (!IsWorldSpace || Viewer == null) return;
+        if (!IsWorldSpace || Viewer == null)
+        {
+            return;
+        }
+
         Vector3 forward = Vector3.ProjectOnPlane(Viewer.transform.forward, Vector3.up);
-        if (forward.sqrMagnitude < 0.01f) forward = Vector3.forward;
+        if (forward.sqrMagnitude < 0.01f)
+        {
+            forward = Vector3.forward;
+        }
+
         forward.Normalize();
-        rect.SetPositionAndRotation(Viewer.transform.position + forward * distanceMetres + Vector3.up * heightOffset,
-            Quaternion.LookRotation(forward, Vector3.up));
+        rect.SetPositionAndRotation(
+            Viewer.transform.position + forward * distanceMetres + Vector3.up * heightOffset,
+            Quaternion.LookRotation(forward, Vector3.up)
+        );
     }
 
     public void RestoreDesktop()
     {
-        if (!IsWorldSpace || canvas == null) return;
+        if (!IsWorldSpace || canvas == null)
+        {
+            return;
+        }
+
         IsWorldSpace = false;
         Viewer = null;
         canvas.renderMode = originalMode;
@@ -92,9 +136,19 @@ public sealed class SharedWorldSpaceCanvas : MonoBehaviour
         rect.localRotation = originalRotation;
         rect.localScale = originalScale;
         canvas.scaleFactor = originalScaleFactor;
-        if (scaler != null) scaler.enabled = originalScalerEnabled;
-        if (raycaster != null) raycaster.enabled = originalRaycasterEnabled;
+        if (scaler != null)
+        {
+            scaler.enabled = originalScalerEnabled;
+        }
+
+        if (raycaster != null)
+        {
+            raycaster.enabled = originalRaycasterEnabled;
+        }
     }
 
-    void OnDisable() => RestoreDesktop();
+    private void OnDisable()
+    {
+        RestoreDesktop();
+    }
 }

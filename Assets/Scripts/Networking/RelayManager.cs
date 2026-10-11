@@ -12,34 +12,31 @@ using WebSocketSharp;
 public class RelayManager : MonoBehaviour
 {
     public static readonly string CONNECTIONTYPE = "dtls";
-
     public bool enableOnline;
-
     public GameObject all;
-
     public GameObject screen_Name;
     public GameObject screen_JoinHost;
     public GameObject screen_Connecting;
-
     public TMP_InputField nameInput;
-
     public TMP_Text errorDisplay;
     public TMP_InputField lobbyCodeInput;
+    private string lobbyCode;
+    private bool startingHost;
+    private bool startingClient;
+    private SharedGameSession session;
 
-    string lobbyCode;
-    bool startingHost;
-    bool startingClient;
-    SharedGameSession session;
-
-    void Awake()
+    private void Awake()
     {
         session = GetComponent<SharedGameSession>();
-        if (session == null) session = gameObject.AddComponent<SharedGameSession>();
+        if (session == null)
+        {
+            session = gameObject.AddComponent<SharedGameSession>();
+        }
     }
 
     public TMP_Text lobbyCodeDisplay;
 
-    void Start()
+    private void Start()
     {
         all.SetActive(true);
         screen_Connecting.SetActive(false);
@@ -62,7 +59,11 @@ public class RelayManager : MonoBehaviour
     public async Task Client()
     {
         var manager = NetworkManager.Singleton;
-        if (startingClient || manager.IsListening) return;
+        if (startingClient || manager.IsListening)
+        {
+            return;
+        }
+
         startingClient = true;
         errorDisplay.text = "";
         lobbyCode = lobbyCodeInput.text.Trim().ToUpperInvariant();
@@ -71,22 +72,40 @@ public class RelayManager : MonoBehaviour
         try
         {
             bool started = enableOnline ? await StartClientWithRelay(lobbyCode, CONNECTIONTYPE) : manager.StartClient();
-            if (!started) throw new System.InvalidOperationException("Connection could not start. Check the join code.");
+            if (!started)
+            {
+                throw new System.InvalidOperationException("Connection could not start. Check the join code.");
+            }
+
             float deadline = Time.realtimeSinceStartup + 30f;
             while (!manager.IsConnectedClient && manager.IsListening && Time.realtimeSinceStartup < deadline)
+            {
                 await Task.Delay(100);
-            if (!manager.IsConnectedClient) throw new System.TimeoutException("Connection timed out. Check the host and join code.");
+            }
+
+            if (!manager.IsConnectedClient)
+            {
+                throw new System.TimeoutException("Connection timed out. Check the host and join code.");
+            }
+
             lobbyCodeDisplay.text = lobbyCode;
             all.SetActive(false);
         }
         catch (System.Exception exception)
         {
-            if (manager.IsListening) manager.Shutdown();
+            if (manager.IsListening)
+            {
+                manager.Shutdown();
+            }
+
             errorDisplay.text = exception.Message;
             screen_Connecting.SetActive(false);
             screen_JoinHost.SetActive(true);
         }
-        finally { startingClient = false; }
+        finally
+        {
+            startingClient = false;
+        }
     }
 
     public void InitHost()
@@ -96,39 +115,55 @@ public class RelayManager : MonoBehaviour
 
     public async Task Host()
     {
-        if (startingHost || NetworkManager.Singleton.IsListening) return;
+        if (startingHost || NetworkManager.Singleton.IsListening)
+        {
+            return;
+        }
+
         startingHost = true;
         errorDisplay.text = "";
         screen_JoinHost.SetActive(false);
         screen_Connecting.SetActive(true);
-
         try
         {
             if (!enableOnline)
             {
                 if (!NetworkManager.Singleton.StartHost())
+                {
                     throw new System.InvalidOperationException("Local host could not start.");
+                }
             }
             else
             {
                 string code = await StartHostWithRelay(10, CONNECTIONTYPE);
                 if (string.IsNullOrEmpty(code))
+                {
                     throw new System.InvalidOperationException("Relay host could not start.");
+                }
+
                 lobbyCodeDisplay.text = code;
                 GUIUtility.systemCopyBuffer = code;
             }
+
             session.LoadGame();
             all.SetActive(false);
         }
         catch (System.Exception exception)
         {
-            if (NetworkManager.Singleton.IsListening) NetworkManager.Singleton.Shutdown();
+            if (NetworkManager.Singleton.IsListening)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+
             errorDisplay.text = "Failed to start host. Please try again.";
             Debug.LogWarning($"Host startup failed: {exception.Message}");
             screen_Connecting.SetActive(false);
             screen_JoinHost.SetActive(true);
         }
-        finally { startingHost = false; }
+        finally
+        {
+            startingHost = false;
+        }
     }
 
     #region RELAY
@@ -142,9 +177,10 @@ public class RelayManager : MonoBehaviour
         }
 
         var allocation = await RelayService.Instance.CreateAllocationAsync(maxConnections);
-        NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, connectionType));
+        NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(
+            AllocationUtils.ToRelayServerData(allocation, connectionType)
+        );
         var joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
-
         return NetworkManager.Singleton.StartHost() ? joinCode : null;
     }
 
@@ -165,9 +201,9 @@ public class RelayManager : MonoBehaviour
             }
 
             var allocation = await RelayService.Instance.JoinAllocationAsync(joinCode: joinCode);
-
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, connectionType));
-
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(
+                AllocationUtils.ToRelayServerData(allocation, connectionType)
+            );
             return !string.IsNullOrEmpty(joinCode) && NetworkManager.Singleton.StartClient();
         }
         catch
@@ -175,6 +211,5 @@ public class RelayManager : MonoBehaviour
             return false;
         }
     }
-
     #endregion
 }
