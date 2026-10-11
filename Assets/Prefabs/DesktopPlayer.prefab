@@ -1319,6 +1319,7 @@ GameObject:
   - component: {fileID: 1493577486062206776}
   - component: {fileID: 2947696790774383646}
   - component: {fileID: 5253568588033088183}
+  - component: {fileID: 6682488784017686635}
   m_Layer: 6
   m_Name: DesktopPlayer
   m_TagString: Player
@@ -3717,3 +3718,24 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3560068577804276450, guid: cd21db0e763965b4691b156d95755fcf, type: 3}
   m_PrefabInstance: {fileID: 4850618278098728536}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6682488784017686635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2879056952290516124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d95ef75968a10af47bceff586224e95e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerGrab
+  ShowTopMostFoldoutHeaderGroup: 1
+  maximumThrowSpeed: 25
+  followMotor:
+    positionGain: 90
+    positionDamping: 18
+    rotationGain: 65
+    rotationDamping: 14
+    maximumAcceleration: 120
+    maximumAngularAcceleration: 100
