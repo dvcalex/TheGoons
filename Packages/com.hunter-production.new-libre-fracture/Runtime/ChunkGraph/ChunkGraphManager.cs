@@ -21,8 +21,8 @@ namespace LibreFracture
         private void Awake()
         {
             _meshRenderer = GetComponent<MeshRenderer>();
-            _collider = GetComponent<Collider>();
-            _collider.enabled = false;
+            //_collider = GetComponent<Collider>();
+            //_collider.enabled = false;
             _meshRenderer.enabled = false;
 
             _nodes = GetComponentsInChildren<ChunkNode>();
@@ -45,7 +45,7 @@ namespace LibreFracture
         private void SetAsleep(bool value)
         {
             _asleep = value;
-            _collider.enabled = value;
+            //_collider.enabled = value;
             _meshRenderer.enabled = value;
             foreach (ChunkNode node in _nodes)
             {
