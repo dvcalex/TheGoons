@@ -3,18 +3,28 @@ using UnityEngine;
 public class ToggleFractureMesh : MonoBehaviour
 {
     public GameObject fracturedObject;
-    private MeshRenderer fo_renderer;
+    private MeshRenderer[] fo_renderers;
     private MeshRenderer self_renderer;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        fo_renderer = fracturedObject.GetComponent<MeshRenderer>();
+        // Includes the fractured object's own renderer (if any) plus all children
+        fo_renderers = fracturedObject.GetComponentsInChildren<MeshRenderer>(true);
         self_renderer = gameObject.GetComponent<MeshRenderer>();
-        fo_renderer.enabled = false;
+
+        SetFracturedRenderers(false);
     }
 
-    // Update is called once per frame
+    private void SetFracturedRenderers(bool enabled)
+    {
+
+        foreach (MeshRenderer r in fo_renderers)
+        {
+            r.enabled = enabled;
+        }
+        fracturedObject.GetComponent<MeshRenderer>().enabled = !enabled;
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.layer != LayerMask.NameToLayer("Destructive"))
@@ -24,7 +34,8 @@ public class ToggleFractureMesh : MonoBehaviour
         Debug.Log("HIT!!");
         if (collision.impulse.magnitude < 1f)
             return;
-        fo_renderer.enabled = true;
+
+        SetFracturedRenderers(true);
         self_renderer.enabled = false;
     }
 }
