@@ -28,27 +28,19 @@ public class NetworkPlayer : NetworkBehaviour
         }
 
         NetworkObject prefab;
-        Vector3 position;
+        Vector3 position = PlayerSpawn._instance.transform.position;
 
         // use vr player
         if (OwnerClientId == Unity.Netcode.NetworkManager.ServerClientId && !VR_Override)
         {
             prefab = player_Host.GetComponent<NetworkObject>();
-            position = Vector3.zero;
         }
         else
         {
             prefab = player_Client.GetComponent<NetworkObject>();
-            position = new Vector3(2f, 0f, 2f);
-
-            // Client IDs are unsigned, so the desktop host must not subtract from zero.
-            if (OwnerClientId > 0)
-            {
-                position.x += (OwnerClientId - 1) * 1.5f;
-            }
         }
 
-        yield return new WaitUntil(() => PlayerSpawn._instance != null);
+        yield return new WaitForSeconds(0.125f);
 
         NetworkObject player = NetworkManager.SpawnManager.InstantiateAndSpawn(
             prefab,
@@ -56,7 +48,7 @@ public class NetworkPlayer : NetworkBehaviour
             false,
             true,
             false,
-            PlayerSpawn._instance.transform.position,
+            position,
             Quaternion.identity
         );
 
