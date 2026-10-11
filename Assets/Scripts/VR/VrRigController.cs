@@ -19,11 +19,6 @@ public sealed class VrRigController : MonoBehaviour
     public float shoulderWidth = 0.65f;
     public float shoulderDrop = 0.25f;
 
-    [Header("Cover eyes")]
-    [Tooltip("Hand poses relative to the physical head. X toggles between these and controller tracking.")]
-    public Transform leftEyeHandTarget;
-    public Transform rightEyeHandTarget;
-
     [Header("Travel")]
     public float travelSpeed = 2f;
     public float travelAcceleration = 3f;
@@ -54,9 +49,6 @@ public sealed class VrRigController : MonoBehaviour
     private Quaternion headRotation;
     private Vector2 stick;
     private float headAuthority;
-    private bool coveringEyes;
-    private bool coverButtonHeld;
-    private bool eyeCoverLocked;
 
     public void BindTracking(Transform space)
     {
@@ -94,56 +86,6 @@ public sealed class VrRigController : MonoBehaviour
     private void Update()
     {
         FollowChassis(chassis.transform.position);
-        UpdateEyeCoverLock();
-
-        var controller = InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);
-        controller.TryGetFeatureValue(CommonUsages.primaryButton, out bool pressed);
-
-        if (Application.isFocused && !paused && headTracked && pressed && !coverButtonHeld)
-        {
-            ToggleCoverEyes();
-        }
-
-        coverButtonHeld = pressed;
-    }
-
-    public void ToggleCoverEyes()
-    {
-        UpdateEyeCoverLock();
-
-        if (eyeCoverLocked)
-        {
-            return;
-        }
-
-        if (coveringEyes)
-        {
-            coveringEyes = false;
-        }
-        else if (leftEyeHandTarget != null && rightEyeHandTarget != null)
-        {
-            coveringEyes = true;
-        }
-    }
-
-    private void UpdateEyeCoverLock()
-    {
-        GameManager game = GameManager._instance;
-
-        // GameManager ends Hiding when hideDuration expires. Use its state
-        // instead of starting a separate countdown on the VR player.
-        if (game != null && game.IsHiding)
-        {
-            eyeCoverLocked = true;
-            coveringEyes = true;
-            return;
-        }
-
-        if (eyeCoverLocked)
-        {
-            eyeCoverLocked = false;
-            coveringEyes = false;
-        }
     }
 
     private void FixedUpdate()
@@ -206,22 +148,6 @@ public sealed class VrRigController : MonoBehaviour
 
     private void DriveHand(VrPhysicsHand hand, InputDevice device, UnityEngine.InputSystem.XR.XRController controller, float side)
     {
-        if (coveringEyes)
-        {
-            Transform eyeTarget = leftEyeHandTarget;
-            if (side > 0f)
-            {
-                eyeTarget = rightEyeHandTarget;
-            }
-
-            if (eyeTarget != null)
-            {
-                // Keep the physics motor active, with open fingers and no grabbing.
-                hand.SetTarget(eyeTarget.position, eyeTarget.rotation, 0f, true);
-                return;
-            }
-        }
-
         bool valid = ReadPose(device, out Vector3 position, out Quaternion rotation);
         if (hand.useControllerAim && controller != null && controller.isTracked.isPressed)
         {
@@ -301,9 +227,6 @@ public sealed class VrRigController : MonoBehaviour
 
     private void OnDisable()
     {
-        eyeCoverLocked = false;
-        coveringEyes = false;
-        coverButtonHeld = false;
         headTracked = false;
         travelArmed = false;
         headAuthority = 0f;

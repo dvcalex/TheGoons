@@ -63,12 +63,10 @@ MonoBehaviour:
     maximumAcceleration: 120
     maximumAngularAcceleration: 100
   reachMultiplier: 5
-  forwardReach: 2
+  forwardReach: 2.5
   maximumReach: 7
   shoulderWidth: 0.65
   shoulderDrop: 0.25
-  leftEyeHandTarget: {fileID: 920000000000000011}
-  rightEyeHandTarget: {fileID: 920000000000000013}
   travelSpeed: 2
   travelAcceleration: 3
   brakingAcceleration: 4
@@ -248,8 +246,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1024045740301348911}
-  - {fileID: 920000000000000011}
-  - {fileID: 920000000000000013}
   m_Father: {fileID: 1498710252578475169}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!54 &920000000000000004
@@ -931,65 +927,3 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8968710754373833487, guid: 564133f38d976c8469d2dca279c909a0, type: 3}
   m_PrefabInstance: {fileID: 8232974592113926944}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &920000000000000010
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 920000000000000011}
-  m_Layer: 2
-  m_Name: LeftEyeHandTarget
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &920000000000000011
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 920000000000000010}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0.70710677, y: 0, z: 0, w: 0.70710677}
-  m_LocalPosition: {x: -0.2, y: -0.4, z: 0.5}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 920000000000000003}
-  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
---- !u!1 &920000000000000012
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 920000000000000013}
-  m_Layer: 2
-  m_Name: RightEyeHandTarget
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &920000000000000013
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 920000000000000012}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0.70710677, y: 0, z: 0, w: 0.70710677}
-  m_LocalPosition: {x: 0.2, y: -0.4, z: 0.5}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 920000000000000003}
-  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}

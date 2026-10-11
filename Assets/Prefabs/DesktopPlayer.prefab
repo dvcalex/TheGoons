@@ -1422,17 +1422,12 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 100
   _isDead: 0
-  minimumImpactDeltaV: 5
-  damagePerDeltaV: 10
-  maxImpactDamage: 100
-  debugImpactDamage: 0
   _input: {fileID: 4947597367036679604}
   _movement: {fileID: 1783135158864127520}
   _ragdollManager: {fileID: 3728800746082267998}
   _logic: {fileID: 5253568588033088183}
   poop: {fileID: 5977157038078584509, guid: 372a141d516af354d8fad7cc3112c229, type: 3}
   poopSpawnLocation: {fileID: 187390718639032290}
-  deathGFX: {fileID: 7377369755306239954, guid: 30d482d8e6cedc04d81db55737a81324, type: 3}
   componentsToDestroy_Other:
   - {fileID: 7668450631706023019}
   - {fileID: 487556297784969613}
@@ -1473,8 +1468,6 @@ MonoBehaviour:
   - {fileID: 4529337466044385724}
   - {fileID: 5834000883334767304}
   volume: {fileID: 6463501503290677103}
-  playerCamera: {fileID: 0}
-  maximumVignetteIntensity: 0.65
 --- !u!114 &5253568588033088183
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1508,28 +1501,6 @@ MonoBehaviour:
   readyColor: {r: 1, g: 1, b: 1, a: 1}
   activeColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   cooldownColor: {r: 0.4, g: 0.4, b: 0.4, a: 1}
---- !u!114 &6682488784017686635
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2879056952290516124}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d95ef75968a10af47bceff586224e95e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerGrab
-  ShowTopMostFoldoutHeaderGroup: 1
-  maximumThrowSpeed: 25
-  palmOffset: {x: 0, y: 0, z: 0}
-  followMotor:
-    positionGain: 90
-    positionDamping: 18
-    rotationGain: 65
-    rotationDamping: 14
-    maximumAcceleration: 120
-    maximumAngularAcceleration: 100
 --- !u!1 &2901616186194869141
 GameObject:
   m_ObjectHideFlags: 0
@@ -2902,7 +2873,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.32
+  m_Radius: 0.5
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
@@ -3747,3 +3718,24 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3560068577804276450, guid: cd21db0e763965b4691b156d95755fcf, type: 3}
   m_PrefabInstance: {fileID: 4850618278098728536}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6682488784017686635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2879056952290516124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d95ef75968a10af47bceff586224e95e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerGrab
+  ShowTopMostFoldoutHeaderGroup: 1
+  maximumThrowSpeed: 25
+  followMotor:
+    positionGain: 90
+    positionDamping: 18
+    rotationGain: 65
+    rotationDamping: 14
+    maximumAcceleration: 120
+    maximumAngularAcceleration: 100
