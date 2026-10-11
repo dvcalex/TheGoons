@@ -241,7 +241,19 @@ public sealed class VrPhysicsHand : MonoBehaviour
         if (player != null)
         {
             Vector3 direction = -collision.GetContact(0).normal;
-            player.Hit(direction * collision.relativeVelocity.magnitude);
+            float impactSpeed = 0f;
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                Vector3 normal = collision.GetContact(i).normal;
+                float normalSpeed = Mathf.Abs(Vector3.Dot(collision.relativeVelocity, normal));
+                if (normalSpeed > impactSpeed)
+                {
+                    impactSpeed = normalSpeed;
+                    direction = -normal;
+                }
+            }
+
+            player.Hit(direction * impactSpeed, collision.impulse.magnitude);
         }
     }
 

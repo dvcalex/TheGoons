@@ -27,10 +27,13 @@ public class Player : NetworkBehaviour
     public bool _isDead;
 
     [Header("Impact Damage")]
-    [Min(0f)] public float minimumImpactDeltaV = 5f;
+    [Tooltip("Safe impact speed in m/s. 14 covers sprinting and ordinary jump landings with the current movement settings.")]
+    [Min(0f)] public float minimumImpactDeltaV = 14f;
     [Min(0f)] public float damagePerDeltaV = 10f;
     [Min(0f)] public float maxImpactDamage = 100f;
     public bool debugImpactDamage = false;
+
+    private float nextImpactDamageTime;
 
     [Header("References")]
     public static Player me;
@@ -184,11 +187,21 @@ public class Player : NetworkBehaviour
 
     public void ApplyImpact(Collision collision, Rigidbody impactBody = null)
     {
-        if (!IsOwner || _isDead)
+        if (!IsOwner || _isDead || Time.time < nextImpactDamageTime)
+        {
             return;
+        }
+
+        // The host handles hand impacts through PlayerGrab, including remote players.
+        if (collision.collider.GetComponentInParent<VrPhysicsHand>() != null)
+        {
+            return;
+        }
 
         if (_movement == null || _movement.rb == null)
+        {
             return;
+        }
 
         Rigidbody rb = impactBody;
         if (rb == null)
@@ -198,35 +211,54 @@ public class Player : NetworkBehaviour
 
         // Impulse-based damage requires a dynamic Rigidbody.
         if (rb.isKinematic)
+        {
             return;
+        }
 
-        // Impulse = mass * change in velocity.
-        // This approximates collision-induced delta-V.
-        float deltaV = collision.impulse.magnitude /
-                       Mathf.Max(rb.mass, 0.0001f);
+        float impactSpeed = 0f;
+        for (int i = 0; i < collision.contactCount; i++)
+        {
+            Vector3 normal = collision.GetContact(i).normal;
+            float normalSpeed = Mathf.Abs(Vector3.Dot(collision.relativeVelocity, normal));
+            impactSpeed = Mathf.Max(impactSpeed, normalSpeed);
+        }
+
+        float impulseDeltaV = collision.impulse.magnitude / Mathf.Max(rb.mass, 0.0001f);
+        float damage = CalculateImpactDamage(impactSpeed, impulseDeltaV);
 
         if (debugImpactDamage)
         {
             Debug.Log(
                 $"Impact with {collision.gameObject.name} | " +
-                $"Delta-V: {deltaV:F2} m/s"
+                $"Normal speed: {impactSpeed:F2} m/s | " +
+                $"Impulse delta-V: {impulseDeltaV:F2} m/s | Damage: {damage:F1}"
             );
         }
 
-        if (deltaV <= minimumImpactDeltaV)
+        if (damage <= 0f)
+        {
             return;
+        }
 
-        // Only velocity change ABOVE the threshold
-        // contributes to damage.
-        float excessDeltaV = deltaV - minimumImpactDeltaV;
+        // One impact can generate several contacts across the capsule and ragdoll.
+        nextImpactDamageTime = Time.time + 0.25f;
+        Damage(damage);
+    }
 
-        float damage = Mathf.Clamp(
-            excessDeltaV * damagePerDeltaV,
+    public float CalculateImpactDamage(float impactSpeed, float impulseDeltaV)
+    {
+        // Solver corrections and joint forces must not make a slow contact lethal.
+        float severity = Mathf.Min(impactSpeed, impulseDeltaV);
+        if (severity <= minimumImpactDeltaV)
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp(
+            (severity - minimumImpactDeltaV) * damagePerDeltaV,
             0f,
             maxImpactDamage
         );
-
-        Damage(damage);
     }
 
     // ==========================================

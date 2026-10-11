@@ -277,7 +277,7 @@ public sealed class PlayerGrab : NetworkBehaviour
     }
 
     // Only host hand contacts can send a knockback to the movement owner.
-    public void Hit(Vector3 velocity)
+    public void Hit(Vector3 velocity, float collisionImpulse)
     {
         if (GameManager._instance != null && !GameManager._instance.IsSeeking)
         {
@@ -290,7 +290,12 @@ public sealed class PlayerGrab : NetworkBehaviour
         }
 
         nextHitTime = Time.time + 0.25f;
-        player.Damage(Mathf.Clamp(velocity.magnitude * 2f, 0f, 100f));
+
+        // Use the movement body's mass on every peer, even when its replica is kinematic.
+        float impulseDeltaV = collisionImpulse / Mathf.Max(player._movement.rb.mass, 0.0001f);
+        float damage = player.CalculateImpactDamage(velocity.magnitude, impulseDeltaV);
+        player.Damage(damage);
+
         HitOwnerRpc(Vector3.ClampMagnitude(velocity, maximumThrowSpeed));
     }
 
