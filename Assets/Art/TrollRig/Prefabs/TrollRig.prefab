@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7215797926368126320}
   - component: {fileID: 6629063085168356890}
   m_Layer: 0
-  m_Name: MechRig_Troll
+  m_Name: TrollRig
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -747,6 +747,7 @@ GameObject:
   - component: {fileID: 7082224236183706841}
   - component: {fileID: 8050443909569046169}
   - component: {fileID: 43071123013767851}
+  - component: {fileID: 3076259739807300758}
   m_Layer: 2
   m_Name: LeftFist
   m_TagString: Untagged
@@ -1218,6 +1219,23 @@ MonoBehaviour:
   fleshGrabClip: {fileID: 8300000, guid: c8fe7beae8ee7cd4c87b9e43c022d5f5, type: 3}
   fleshReleaseClip: {fileID: 8300000, guid: 9e87cbca31df4ed43a6f5c9cf4e37df9, type: 3}
   sparkMaterial: {fileID: 2100000, guid: c68bfb24675108542aa5e00096de6de1, type: 2}
+--- !u!114 &3076259739807300758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3112315596985910339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24899ede27a0dab4fbed9e3a3b4108c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TrollPresentation.TrollContactEffects
+  impactPrefab: {fileID: 6274878792797807639, guid: 4278d55ee917e874283e8734ee7b6cc8, type: 3}
+  dustPrefab: {fileID: 3956811167020855050, guid: 44c44de0306c95e4282aa2c384ce7237, type: 3}
+  minimumSpeed: 1.4
+  cooldownSeconds: 0.12
+  effectScale: 0.45
 --- !u!1 &3374932854987410773
 GameObject:
   m_ObjectHideFlags: 0
@@ -1333,6 +1351,7 @@ GameObject:
   - component: {fileID: 8061514173069990983}
   - component: {fileID: 6758840744286974586}
   - component: {fileID: 3830208313133232109}
+  - component: {fileID: 2843125559858461584}
   m_Layer: 2
   m_Name: RightFist
   m_TagString: Untagged
@@ -1804,6 +1823,23 @@ MonoBehaviour:
   fleshGrabClip: {fileID: 8300000, guid: c8fe7beae8ee7cd4c87b9e43c022d5f5, type: 3}
   fleshReleaseClip: {fileID: 8300000, guid: 9e87cbca31df4ed43a6f5c9cf4e37df9, type: 3}
   sparkMaterial: {fileID: 2100000, guid: c68bfb24675108542aa5e00096de6de1, type: 2}
+--- !u!114 &2843125559858461584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3585284501349255097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24899ede27a0dab4fbed9e3a3b4108c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TrollPresentation.TrollContactEffects
+  impactPrefab: {fileID: 6274878792797807639, guid: 4278d55ee917e874283e8734ee7b6cc8, type: 3}
+  dustPrefab: {fileID: 3956811167020855050, guid: 44c44de0306c95e4282aa2c384ce7237, type: 3}
+  minimumSpeed: 1.4
+  cooldownSeconds: 0.12
+  effectScale: 0.45
 --- !u!1 &3612712346623405975
 GameObject:
   m_ObjectHideFlags: 0
