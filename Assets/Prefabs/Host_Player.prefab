@@ -381,7 +381,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 910000000000000002}
+  - {fileID: 1759927950430833824}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &3517114444487407138
@@ -396,7 +396,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 377706888
+  GlobalObjectIdHash: 2797245421
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -425,8 +425,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LocalVrPlayer
   ShowTopMostFoldoutHeaderGroup: 1
   origin: {fileID: 1525965653290996151}
-  trollRig: {fileID: 910000000000000005}
-  localHeadVisual: {fileID: 910000000000000006}
+  trollRig: {fileID: 910920813067245529}
+  localHeadVisual: {fileID: 186578333078843438}
 --- !u!1 &4054056925215020604
 GameObject:
   m_ObjectHideFlags: 0
@@ -459,7 +459,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7025612798250447353}
-  m_Father: {fileID: 910000000000000003}
+  m_Father: {fileID: 7992626876398532726}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1525965653290996151
 MonoBehaviour:
@@ -478,6 +478,24 @@ MonoBehaviour:
   m_CameraFloorOffsetObject: {fileID: 7310283448150209108}
   m_RequestedTrackingOriginMode: 2
   m_CameraYOffset: 1.65
+--- !u!114 &910000000000000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4054056925215020604}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 606d7f3eed082a948aa9c4f73938c9a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MechLab.Core::MechLab.OpenXRTransformInput
+  rig: {fileID: 6295981621141466651}
+  trackingSpace: {fileID: 7025612798250447353}
+  head: {fileID: 6870533409504989073}
+  leftController: {fileID: 6736182544825396890}
+  rightController: {fileID: 8386190766978465877}
+  readDeviceInput: 1
 --- !u!1 &4334468127637315160
 GameObject:
   m_ObjectHideFlags: 0
@@ -885,24 +903,6 @@ Transform:
   - {fileID: 8386190766978465877}
   m_Father: {fileID: 896679793630285671}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &910000000000000007
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4054056925215020604}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 606d7f3eed082a948aa9c4f73938c9a9, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: MechLab.Core::MechLab.OpenXRTransformInput
-  rig: {fileID: 910000000000000004}
-  trackingSpace: {fileID: 7025612798250447353}
-  head: {fileID: 6870533409504989073}
-  leftController: {fileID: 6736182544825396890}
-  rightController: {fileID: 8386190766978465877}
-  readDeviceInput: 1
 --- !u!1001 &910000000000000001
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -915,11 +915,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2495987986186086854, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
+    - target: {fileID: 894025549326152461, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
       propertyPath: useScriptedInput
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 894025549326152461, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
+    - target: {fileID: 2495987986186086854, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
       propertyPath: useScriptedInput
       value: 1
       objectReference: {fileID: 0}
@@ -931,34 +931,34 @@ PrefabInstance:
       addedObject: {fileID: 896679793630285671}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
---- !u!4 &910000000000000002 stripped
+--- !u!4 &186578333078843438 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 1498710252578475169, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
+  m_CorrespondingSourceObject: {fileID: 1024045740301348911, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
   m_PrefabInstance: {fileID: 910000000000000001}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &910000000000000003 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7082891048026011767, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
-  m_PrefabInstance: {fileID: 910000000000000001}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &910000000000000004 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6629063085168356890, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
-  m_PrefabInstance: {fileID: 910000000000000001}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 910000000000000005}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 715adc0a4e4746dba3dc9dbd1fc8ccfd, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: MechLab.Core::MechLab.MechRig
---- !u!1 &910000000000000005 stripped
+--- !u!1 &910920813067245529 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1343098566809560, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
   m_PrefabInstance: {fileID: 910000000000000001}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &910000000000000006 stripped
+--- !u!4 &1759927950430833824 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 1024045740301348911, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
+  m_CorrespondingSourceObject: {fileID: 1498710252578475169, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
+  m_PrefabInstance: {fileID: 910000000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6295981621141466651 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6629063085168356890, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
+  m_PrefabInstance: {fileID: 910000000000000001}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910920813067245529}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 715adc0a4e4746dba3dc9dbd1fc8ccfd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MechLab.Core::MechLab.MechRig
+--- !u!4 &7992626876398532726 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7082891048026011767, guid: 62118cef8e82f6d4c9f1e397d83ceb2d, type: 3}
   m_PrefabInstance: {fileID: 910000000000000001}
   m_PrefabAsset: {fileID: 0}
