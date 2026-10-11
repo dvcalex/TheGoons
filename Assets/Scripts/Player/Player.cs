@@ -11,6 +11,7 @@ public class Player : NetworkBehaviour
     public PlayerMovement _movement;
 
     public PlayerRagdollManager _ragdollManager;
+    public PlayerLogic _logic;
 
     [Space]
 
@@ -103,9 +104,9 @@ public class Player : NetworkBehaviour
                 invisCooldownTimer = invisCooldownTime;
 
                 // ---> START THE UI COOLDOWN WIPEPAGE HERE <---
-                if (PlayerLogic.Instance != null)
+                if (_logic != null)
                 {
-                    PlayerLogic.Instance.TriggerInvisCooldown();
+                    _logic.TriggerInvisCooldown();
                 }
             }
         }
@@ -149,9 +150,9 @@ public class Player : NetworkBehaviour
         SetInvisibility(true);
 
         // ---> GRAY OUT UI ICON WHILE ACTIVE <---
-        if (PlayerLogic.Instance != null)
+        if (_logic != null)
         {
-            PlayerLogic.Instance.SetInvisActiveUI();
+            _logic.SetInvisActiveUI();
         }
     }
 
