@@ -88,6 +88,11 @@ public class PlayerMouseLook : NetworkBehaviour
             return;
         }
 
+        if (Cursor.lockState != CursorLockMode.Locked)
+        {
+            return;
+        }
+
         if (Player.me._ragdollManager.isRagdoll)
         {
             return;

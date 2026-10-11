@@ -35,6 +35,13 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip hidersWon;
     [SerializeField] private AudioClip seekerWon;
 
+    [SerializeField] private AudioClip hidingMusic;
+    [SerializeField] private AudioClip seekingStarted;
+
+    private AudioClip requestedTrack;
+    private bool musicInitialized;
+    private RoundStage previousStage;
+
     private AudioSource sourceA;
     private AudioSource sourceB;
     private AudioSource cuesSource;
@@ -65,12 +72,6 @@ public class AudioManager : MonoBehaviour
 
     private void OnEnable()
     {
-        // Force the GameObject to stay active if disabled externally
-        if (!gameObject.activeSelf)
-        {
-        
-        }
-
         if (_instance != this)
         {
             return;
@@ -78,21 +79,11 @@ public class AudioManager : MonoBehaviour
 
         GameManager.InstanceChanged += SubscribeToGameManager;
 
-        if (GameManager._instance != null)
-        {
-            SubscribeToGameManager(GameManager._instance);
-        }
+        SubscribeToGameManager(GameManager._instance);
     }
 
     private void OnDisable()
     {
-        Debug.LogWarning(
-            $"[AudioManager] OnDisable | scene={gameObject.scene.name} | " +
-            $"activeSelf={gameObject.activeSelf} | activeInHierarchy={gameObject.activeInHierarchy} | " +
-            $"parent={(transform.parent ? transform.parent.name : "none")} | " +
-            $"isInstance={_instance == this}\n{Environment.StackTrace}", this);
-
-        // --- Your existing OnDisable code below ---
         if (_instance == this)
         {
             GameManager.InstanceChanged -= SubscribeToGameManager;
@@ -100,6 +91,8 @@ public class AudioManager : MonoBehaviour
         }
 
         StopCurrentTransition();
+        musicInitialized = false;
+        requestedTrack = null;
         if (sourceA != null)
             StopAndClear(sourceA);
         if (sourceB != null)
@@ -143,11 +136,13 @@ public class AudioManager : MonoBehaviour
 
         if (gameManager == null)
         {
-            HandlePhaseChanged(GamePhase.Lobby, true);
+            UpdateMusic();
             return;
         }
 
+        previousStage = gameManager.CurrentStage;
         gameManager.PhaseChanged += HandlePhaseChanged;
+        gameManager.StageChanged += HandleStageChanged;
         gameManager.PostStart += HandleRoundStarted;
         gameManager.HiderCaught += HandleHiderCaught;
         gameManager.PostEnd += HandleRoundEnded;
@@ -164,6 +159,7 @@ public class AudioManager : MonoBehaviour
         }
 
         subscribedGameManager.PhaseChanged -= HandlePhaseChanged;
+        subscribedGameManager.StageChanged -= HandleStageChanged;
         subscribedGameManager.PostStart -= HandleRoundStarted;
         subscribedGameManager.HiderCaught -= HandleHiderCaught;
         subscribedGameManager.PostEnd -= HandleRoundEnded;
@@ -171,8 +167,26 @@ public class AudioManager : MonoBehaviour
         subscribedGameManager = null;
     }
 
-    private void HandleRoundStarted() => PlayCue(roundStarted);
-    private void HandleHiderCaught(Player player) => PlayCue(hiderCaught);
+    private void HandleRoundStarted()
+    {
+        PlayCue(roundStarted);
+    }
+
+    private void HandleHiderCaught(Player player)
+    {
+        PlayCue(hiderCaught);
+    }
+
+    private void HandleStageChanged(RoundStage stage)
+    {
+        if (previousStage == RoundStage.Hiding && stage == RoundStage.Seeking)
+        {
+            PlayCue(seekingStarted);
+        }
+
+        previousStage = stage;
+        UpdateMusic();
+    }
 
     private void HandleRoundEnded(RoundResult result)
     {
@@ -190,13 +204,27 @@ public class AudioManager : MonoBehaviour
         cuesSource.PlayOneShot(clip, cuesVolume);
     }
 
-    private void HandlePhaseChanged(GamePhase phase) => HandlePhaseChanged(phase, false);
+    private void HandlePhaseChanged(GamePhase phase)
+    {
+        UpdateMusic();
+    }
 
-    private void HandlePhaseChanged(GamePhase phase, bool silence)
+    private void UpdateMusic()
     {
         AudioClip track = null;
+        GamePhase phase = GamePhase.Lobby;
 
-        if (!silence)
+        if (subscribedGameManager != null)
+        {
+            phase = subscribedGameManager.CurrentPhase;
+            if (subscribedGameManager.IsHiding)
+            {
+                phase = GamePhase.Lobby;
+                track = hidingMusic;
+            }
+        }
+
+        if (track == null)
         {
             foreach (PhaseMusic entry in musicTracks)
             {
@@ -208,6 +236,14 @@ public class AudioManager : MonoBehaviour
             }
         }
 
+        // Phase and stage events can describe the same transition.
+        if (musicInitialized && requestedTrack == track)
+        {
+            return;
+        }
+
+        musicInitialized = true;
+        requestedTrack = track;
         StopCurrentTransition();
 
         AudioSource target = null;
@@ -224,7 +260,11 @@ public class AudioManager : MonoBehaviour
             }
             else
             {
-                target = sourceA.volume <= sourceB.volume ? sourceA : sourceB;
+                target = sourceA;
+                if (sourceB.volume < sourceA.volume)
+                {
+                    target = sourceB;
+                }
                 StopAndClear(target);
                 target.clip = track;
                 target.Play();
@@ -247,8 +287,16 @@ public class AudioManager : MonoBehaviour
         float startA = sourceA.volume;
         float startB = sourceB.volume;
 
-        float endA = target == sourceA ? musicVolume : 0f;
-        float endB = target == sourceB ? musicVolume : 0f;
+        float endA = 0f;
+        float endB = 0f;
+        if (target == sourceA)
+        {
+            endA = musicVolume;
+        }
+        if (target == sourceB)
+        {
+            endB = musicVolume;
+        }
 
         float duration = crossfadeDuration;
         float elapsed = 0f;

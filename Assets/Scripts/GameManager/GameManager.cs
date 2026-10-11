@@ -118,15 +118,105 @@ public class GameManager : NetworkBehaviour
     // PUBLIC PROPERTIES
     // ==========================================
 
-    public GamePhase CurrentPhase => roundState.Value.Phase;
-    public RoundStage CurrentStage => roundState.Value.Stage;
-    public bool IsHiding => CurrentPhase == GamePhase.Playing && CurrentStage == RoundStage.Hiding;
-    public bool IsSeeking => CurrentPhase == GamePhase.Playing && CurrentStage == RoundStage.Seeking;
-    public RoundResult Result => roundState.Value.Result;
-    public int HidersCount => roundState.Value.Hiders;
+    public GamePhase CurrentPhase
+    {
+        get
+        {
+            return roundState.Value.Phase;
+        }
+    }
 
-    public bool timerIsRunning =>
-        CurrentPhase == GamePhase.Playing;
+    public RoundStage CurrentStage
+    {
+        get
+        {
+            return roundState.Value.Stage;
+        }
+    }
+
+    public bool IsHiding
+    {
+        get
+        {
+            return CurrentPhase == GamePhase.Playing && CurrentStage == RoundStage.Hiding;
+        }
+    }
+
+    public bool IsSeeking
+    {
+        get
+        {
+            return CurrentPhase == GamePhase.Playing && CurrentStage == RoundStage.Seeking;
+        }
+    }
+
+    public RoundResult Result
+    {
+        get
+        {
+            return roundState.Value.Result;
+        }
+    }
+
+    public int HidersCount
+    {
+        get
+        {
+            return roundState.Value.Hiders;
+        }
+    }
+
+    public bool timerIsRunning
+    {
+        get
+        {
+            return CurrentPhase == GamePhase.Playing;
+        }
+    }
+
+    public bool IsResetting
+    {
+        get
+        {
+            return resetting.Value;
+        }
+    }
+
+
+    private readonly NetworkVariable<bool> resetting = new NetworkVariable<bool>();
+    private readonly NetworkVariable<bool> readyToStart = new NetworkVariable<bool>();
+
+    public bool CanRequestStart
+    {
+        get { return readyToStart.Value; }
+    }
+
+    public bool CanStartRound
+    {
+        get
+        {
+            if (!IsSpawned || !IsServer || IsResetting || CurrentPhase != GamePhase.Lobby || HidersCount == 0)
+            {
+                return false;
+            }
+
+            SharedGameSession session = NetworkManager.GetComponent<SharedGameSession>();
+            if (session != null && !session.MapReady)
+            {
+                return false;
+            }
+
+            foreach (var client in NetworkManager.ConnectedClients.Values)
+            {
+                if (client.PlayerObject == null || client.PlayerObject.GetComponent<NetworkPlayer>() != null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
 
     public float timeRemaining
     {
@@ -212,6 +302,10 @@ public class GameManager : NetworkBehaviour
         _instance = this;
 
         UpdateUI();
+        if (GetComponent<RoundControls>() == null)
+        {
+            gameObject.AddComponent<RoundControls>();
+        }
         InstanceChanged?.Invoke(this);
     }
 
@@ -224,6 +318,7 @@ public class GameManager : NetworkBehaviour
         if (IsServer)
         {
             remainingHiders.Clear();
+            resetting.Value = false;
 
             roundState.Value = new RoundState
             {
@@ -265,13 +360,15 @@ public class GameManager : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
-        if (_instance != this)
-            return;
+        if (_instance == this)
+        {
+            _instance = null;
+            InstanceChanged?.Invoke(null);
+        }
 
-        _instance = null;
-        InstanceChanged?.Invoke(null);
+        base.OnDestroy();
     }
 
     private void Update()
@@ -284,20 +381,26 @@ public class GameManager : NetworkBehaviour
 
         HandleDebug();
 
-        // Host start-game input.
-        if (Player.me != null &&
-            Player.me._input != null &&
-            Player.me._input.actions != null)
+        if (CurrentPhase == GamePhase.Lobby && Server._instance != null)
         {
-            var startAction =
-                Player.me._input.actions.FindAction("StartGame");
-
-            if (startAction != null &&
-                startAction.WasPressedThisFrame())
+            int count = 0;
+            foreach (Player player in Server._instance.GetAllPlayers())
             {
-                StartGame_RPC();
+                if (player != null && player.IsSpawned && !player._isDead && player != seeker)
+                {
+                    count++;
+                }
+            }
+
+            RoundState lobby = roundState.Value;
+            if (lobby.Hiders != count)
+            {
+                lobby.Hiders = count;
+                roundState.Value = lobby;
             }
         }
+
+        readyToStart.Value = CanStartRound;
 
         if (!timerIsRunning || changingPhase)
             return;
@@ -328,7 +431,7 @@ public class GameManager : NetworkBehaviour
     // START GAME
     // ==========================================
 
-    // Clients send a request to the server. Only the server/host may start rounds.
+    // Any connected player can request a start. The server validates readiness.
     public void StartGame_RPC()
     {
         if (IsSpawned)
@@ -338,15 +441,17 @@ public class GameManager : NetworkBehaviour
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void RequestStartGameRpc(RpcParams rpcParams = default)
     {
-        if (!IsAuthorizedRoundController(rpcParams.Receive.SenderClientId))
+        if (!IsServer || !NetworkManager.ConnectedClients.ContainsKey(rpcParams.Receive.SenderClientId))
+        {
             return;
+        }
 
         StartGameInternal();
     }
 
     private void StartGameInternal()
     {
-        if (!CanControlRound())
+        if (!CanControlRound() || !CanStartRound)
             return;
 
         if (CurrentPhase == GamePhase.Playing)
@@ -363,18 +468,16 @@ public class GameManager : NetworkBehaviour
 
         if (Server._instance != null && Server._instance.IsSpawned)
         {
-            // Count everyone other than the seeker. Default to host as seeker
-            // if no explicit seeker has been selected yet.
             hiders = Server._instance.GetAllPlayers();
-            if (activeSeeker == null)
-                activeSeeker = Server._instance.GetHostPlayer();
+            // The VR host has LocalVrPlayer, not Player, so it is already
+            // excluded. Desktop-host testing can still take part as a hider.
         }
 
         if (hiders != null)
         {
             foreach (Player player in hiders)
             {
-                if (player == null || !player.IsSpawned)
+                if (player == null || !player.IsSpawned || player._isDead)
                     continue;
 
                 // Do not count the seeker as a hider.
@@ -445,7 +548,7 @@ public class GameManager : NetworkBehaviour
         ulong playerObjId,
         RpcParams rpcParams = default)
     {
-        if (!IsServer || !timerIsRunning ||
+        if (!IsServer || !IsSeeking ||
             !remainingHiders.Contains(playerObjId))
             return;
 
@@ -454,6 +557,12 @@ public class GameManager : NetworkBehaviour
             return;
 
         ulong senderId = rpcParams.Receive.SenderClientId;
+
+        Player deadPlayer = playerObject.GetComponent<Player>();
+        if (deadPlayer == null || !deadPlayer._isDead)
+        {
+            return;
+        }
 
         // A client may report only its own character; the server can report anyone.
         if (senderId != NetworkManager.ServerClientId &&
@@ -606,9 +715,11 @@ public class GameManager : NetworkBehaviour
             !timerIsRunning)
             return;
 
-        RoundResult result = remainingHiders.Count > 0
-            ? RoundResult.HidersWin
-            : RoundResult.SeekerWins;
+        RoundResult result = RoundResult.SeekerWins;
+        if (remainingHiders.Count > 0)
+        {
+            result = RoundResult.HidersWin;
+        }
 
         EndGameInternal(result);
     }
@@ -668,7 +779,31 @@ public class GameManager : NetworkBehaviour
         if (!IsAuthorizedRoundController(rpcParams.Receive.SenderClientId))
             return;
 
-        ReturnToLobbyInternal();
+        if (CurrentPhase != GamePhase.Results || IsResetting)
+        {
+            return;
+        }
+
+        SharedGameSession session = NetworkManager.GetComponent<SharedGameSession>();
+        if (session != null)
+        {
+            resetting.Value = true;
+            session.RestartGame();
+        }
+    }
+
+    public void FinishRoundReset(bool success)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        resetting.Value = false;
+        if (success)
+        {
+            ReturnToLobbyInternal();
+        }
     }
 
     private void ReturnToLobbyInternal()
@@ -816,10 +951,11 @@ public class GameManager : NetworkBehaviour
                 case GamePhase.Results:
                     if (timerIsRunning)
                     {
-                        RoundResult result =
-                            debugResult == RoundResult.None
-                                ? RoundResult.HidersWin
-                                : debugResult;
+                        RoundResult result = debugResult;
+                        if (result == RoundResult.None)
+                        {
+                            result = RoundResult.HidersWin;
+                        }
 
                         EndGameInternal(result);
                     }
@@ -888,12 +1024,19 @@ public class GameManager : NetworkBehaviour
 
         if (stageText != null)
         {
-            string label = CurrentStage switch
+            string label = "LOBBY";
+            if (IsHiding)
             {
-                RoundStage.Hiding => "HIDING TIME",
-                RoundStage.Seeking => "SEEKER TIME",
-                _ => CurrentPhase == GamePhase.Results ? "ROUND OVER" : "LOBBY"
-            };
+                label = "HIDING TIME";
+            }
+            else if (IsSeeking)
+            {
+                label = "SEEKER TIME";
+            }
+            else if (CurrentPhase == GamePhase.Results)
+            {
+                label = "ROUND OVER";
+            }
 
             if (stageText.text != label)
                 stageText.text = label;

@@ -282,6 +282,15 @@ public sealed class VrRigController : MonoBehaviour
     private void Travel(InputDevice device, Quaternion viewRotation)
     {
         stick = Vector2.zero;
+        GameManager game = GameManager._instance;
+        if (game != null && (game.IsHiding || game.IsResetting || game.CurrentPhase == GamePhase.Results))
+        {
+            travelArmed = false;
+            Vector3 braking = Vector3.ClampMagnitude(-chassis.linearVelocity / 0.35f, brakingAcceleration * WorldScale);
+            chassis.AddForce(braking, ForceMode.Acceleration);
+            return;
+        }
+
         if (!leftHand.Tracked || !device.TryGetFeatureValue(CommonUsages.primary2DAxis, out Vector2 axis))
         {
             travelArmed = false;

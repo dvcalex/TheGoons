@@ -66,6 +66,11 @@ public sealed class PlayerGrab : NetworkBehaviour
 
     public bool CanGrab(VrPhysicsHand hand)
     {
+        if (GameManager._instance != null && !GameManager._instance.IsSeeking)
+        {
+            return false;
+        }
+
         if (!IsSpawned || !IsServer || IsHeld || player == null || hand == null || !hand.Tracked)
         {
             return false;
@@ -160,6 +165,12 @@ public sealed class PlayerGrab : NetworkBehaviour
 
         if (!IsSpawned || !IsHeld)
         {
+            return;
+        }
+
+        if (IsServer && (player._isDead || (GameManager._instance != null && !GameManager._instance.IsSeeking)))
+        {
+            EndGrab(serverHand);
             return;
         }
 
@@ -268,12 +279,18 @@ public sealed class PlayerGrab : NetworkBehaviour
     // Only host hand contacts can send a knockback to the movement owner.
     public void Hit(Vector3 velocity)
     {
+        if (GameManager._instance != null && !GameManager._instance.IsSeeking)
+        {
+            return;
+        }
+
         if (!IsSpawned || !IsServer || IsHeld || Time.time < nextHitTime || velocity.magnitude < 1f)
         {
             return;
         }
 
         nextHitTime = Time.time + 0.25f;
+        player.Damage(Mathf.Clamp(velocity.magnitude * 2f, 0f, 100f));
         HitOwnerRpc(Vector3.ClampMagnitude(velocity, maximumThrowSpeed));
     }
 

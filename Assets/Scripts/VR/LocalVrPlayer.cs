@@ -85,17 +85,29 @@ public sealed class LocalVrPlayer : NetworkBehaviour
         {
             trollRig.SetActive(true);
             rig.BindTracking(origin.CameraFloorOffsetObject.transform);
-            VrSpawnPoint spawn = VrSpawnPoint.FindInScene(SceneManager.GetSceneByName(SharedGameSession.GameScene));
-            if (spawn != null)
-            {
-                rig.Relocate(spawn.transform);
-            }
+            SceneManager.sceneLoaded += RelocateToMap;
+            RelocateToMap(SceneManager.GetSceneByName(SharedGameSession.GameScene), LoadSceneMode.Additive);
+            origin.Camera.gameObject.AddComponent<VrHidingView>();
         }
         else
         {
             PrepareRemoteRig();
             pose.OnValueChanged += PoseChanged;
             PoseChanged(default(RigPose), pose.Value);
+        }
+    }
+
+    private void RelocateToMap(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != SharedGameSession.GameScene)
+        {
+            return;
+        }
+
+        VrSpawnPoint spawn = VrSpawnPoint.FindInScene(scene);
+        if (spawn != null)
+        {
+            rig.Relocate(spawn.transform);
         }
     }
 
@@ -213,6 +225,7 @@ public sealed class LocalVrPlayer : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        SceneManager.sceneLoaded -= RelocateToMap;
         pose.OnValueChanged -= PoseChanged;
         if (origin != null)
         {

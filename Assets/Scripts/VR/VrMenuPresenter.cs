@@ -46,6 +46,7 @@ public sealed class VrMenuPresenter : MonoBehaviour
 
     private IEnumerator Start()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += SceneLoaded;
         GameManager.InstanceChanged += BindGameplayPanels;
 
         // Let RelayManager initialize its desktop screens first.
@@ -58,6 +59,15 @@ public sealed class VrMenuPresenter : MonoBehaviour
             }
 
             yield return new WaitForSecondsRealtime(0.2f);
+        }
+    }
+
+    private void SceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (scene.name == SharedGameSession.GameScene)
+        {
+            positioned = false;
+            placementDelay = 2;
         }
     }
 
@@ -419,6 +429,7 @@ public sealed class VrMenuPresenter : MonoBehaviour
 
     private void OnDestroy()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= SceneLoaded;
         GameManager.InstanceChanged -= BindGameplayPanels;
     }
 }

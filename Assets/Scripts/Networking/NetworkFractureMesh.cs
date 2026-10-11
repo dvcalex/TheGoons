@@ -11,8 +11,7 @@ public class NetworkFractureMesh : NetworkBehaviour
 
     public List<int> trackedChunks = new List<int>();
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public override void OnNetworkSpawn()
     {
         ChunkNode[] nodes = GetComponentsInChildren<ChunkNode>();
 
@@ -30,25 +29,29 @@ public class NetworkFractureMesh : NetworkBehaviour
             
         }
 
-        StartCoroutine(WaitTillConnection());
-    }
-
-    IEnumerator WaitTillConnection()
-    {
-        yield return new WaitUntil(() => NetworkManager.Singleton.IsConnectedClient || NetworkManager.Singleton.IsServer);
-
-        if(IsServer)
+        if (IsServer)
+        {
             NetworkManager.NetworkTickSystem.Tick += OnNetworkTick;
+        }
     }
 
     public override void OnNetworkDespawn()
     {
-        if(IsServer)
+        if (NetworkManager != null && NetworkManager.NetworkTickSystem != null)
+        {
             NetworkManager.NetworkTickSystem.Tick -= OnNetworkTick;
+        }
+        trackedChunks.Clear();
+        base.OnNetworkDespawn();
     }
 
     private void OnNetworkTick()
     {
+        if (!IsSpawned || !IsServer || !NetworkManager.IsListening)
+        {
+            return;
+        }
+
         List<int> chunksToAdd = new List<int>();
         List<int> chunksToRemove = new List<int>();
 
@@ -64,9 +67,9 @@ public class NetworkFractureMesh : NetworkBehaviour
             }
         }
 
-        for (int i = 0; i < trackedChunks.Count; i++)
+        for (int i = trackedChunks.Count - 1; i >= 0; i--)
         {
-            if(registry[trackedChunks[i]] == null || (registry[i].gameObject.GetComponent<Rigidbody>() != null && registry[i].gameObject.GetComponent<Rigidbody>().linearVelocity.magnitude < 0.5f))
+            if(registry[trackedChunks[i]] == null || (registry[trackedChunks[i]].gameObject.GetComponent<Rigidbody>() != null && registry[trackedChunks[i]].gameObject.GetComponent<Rigidbody>().linearVelocity.magnitude < 0.5f))
             {
                 chunksToRemove.Add(trackedChunks[i]);
                 trackedChunks.Remove(trackedChunks[i]);
@@ -80,7 +83,10 @@ public class NetworkFractureMesh : NetworkBehaviour
         if (chunksToRemove.Count > 0)
             RemoveChunks_RPC(chunksToRemove.ToArray());
 
-        SyncData_RPC(GetTrackedPositions(), GetTrackedRotations());
+        if (trackedChunks.Count > 0)
+        {
+            SyncData_RPC(GetTrackedPositions(), GetTrackedRotations());
+        }
     }
 
     public Vector3[] GetTrackedPositions()

@@ -392,14 +392,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   ShowTopMostFoldoutHeaderGroup: 1
-  roundDuration: 60
+  seekDuration: 60
   players: []
   seeker: {fileID: 0}
   timerText: {fileID: 459501630322634634}
   hidersCountText: {fileID: 7773212573027414069}
   lobbyCodeText: {fileID: 7710961479392390854}
-  isDebugging: 1
-  debugPhase: 1
+  isDebugging: 0
+  debugPhase: 0
   debugResult: 0
 --- !u!1 &7462029108625370276
 GameObject:

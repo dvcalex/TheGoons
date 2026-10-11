@@ -283,6 +283,14 @@ public class PlayerMovement : NetworkBehaviour
         }
     }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (_player != null)
+        {
+            _player.ApplyImpact(collision);
+        }
+    }
+
     private void Update()
     {
         if (!IsOwner)

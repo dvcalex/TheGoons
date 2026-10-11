@@ -21,6 +21,11 @@ public class NetworkPlayer : NetworkBehaviour
     private IEnumerator SpawnWhenMapReady()
     {
         yield return new WaitUntil(() => SceneManager.GetSceneByName(SharedGameSession.GameScene).isLoaded);
+        SharedGameSession session = NetworkManager.GetComponent<SharedGameSession>();
+        if (session != null)
+        {
+            yield return new WaitUntil(() => session.MapReady && (GameManager._instance == null || !GameManager._instance.IsResetting));
+        }
 
         if (!IsSpawned || !NetworkManager.ConnectedClients.ContainsKey(OwnerClientId))
         {

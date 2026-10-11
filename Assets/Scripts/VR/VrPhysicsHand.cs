@@ -105,6 +105,16 @@ public sealed class VrPhysicsHand : MonoBehaviour
 
     private void FixedUpdate()
     {
+        GameManager game = GameManager._instance;
+        bool canInteract = game == null || game.IsSeeking;
+        Body.detectCollisions = canInteract;
+        if (!canInteract)
+        {
+            Grip = 0f;
+            gripReleased = false;
+            Release();
+        }
+
         if (!Tracked)
         {
             return;
@@ -114,7 +124,7 @@ public sealed class VrPhysicsHand : MonoBehaviour
         motor.Drive(Body, TargetPosition, targetRotation, authority, WorldScale);
         Body.linearVelocity = Vector3.ClampMagnitude(Body.linearVelocity, maximumSpeed * WorldScale);
 
-        if (Grip < 0.3f)
+        if (canInteract && Grip < 0.3f)
         {
             gripReleased = true;
             Release();

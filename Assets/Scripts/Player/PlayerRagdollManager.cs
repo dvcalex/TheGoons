@@ -55,7 +55,13 @@ public class PlayerRagdollManager : NetworkBehaviour
 
     private void Awake()
     {
-        movement = GetComponentInParent<Player>()._movement;
+        Player player = GetComponentInParent<Player>();
+        movement = player._movement;
+        if (GrabBody != null)
+        {
+            PlayerImpactRelay relay = GrabBody.gameObject.AddComponent<PlayerImpactRelay>();
+            relay.player = player;
+        }
     }
 
     private void Start()

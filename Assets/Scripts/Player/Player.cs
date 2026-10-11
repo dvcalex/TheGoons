@@ -13,14 +13,16 @@ public class Player : NetworkBehaviour
     public NetworkVariable<float> health = new(
         100f,
         NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner
+        NetworkVariableWritePermission.Server
     );
 
     private readonly NetworkVariable<bool> networkIsDead = new(
         false,
         NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner
+        NetworkVariableWritePermission.Server
     );
+
+    private readonly NetworkVariable<bool> waitingForRound = new NetworkVariable<bool>();
 
     public bool _isDead;
 
@@ -85,6 +87,17 @@ public class Player : NetworkBehaviour
 
         health.OnValueChanged += OnHealthChanged;
         networkIsDead.OnValueChanged += OnDeathStateChanged;
+        waitingForRound.OnValueChanged += OnWaitingChanged;
+
+        if (IsServer && GameManager._instance != null)
+        {
+            waitingForRound.Value = GameManager._instance.CurrentPhase != GamePhase.Lobby;
+        }
+
+        if (Server._instance != null)
+        {
+            Server._instance.RegisterPlayer(this);
+        }
 
         if (IsOwner)
             InitLocal();
@@ -101,6 +114,11 @@ public class Player : NetworkBehaviour
     {
         health.OnValueChanged -= OnHealthChanged;
         networkIsDead.OnValueChanged -= OnDeathStateChanged;
+        waitingForRound.OnValueChanged -= OnWaitingChanged;
+        if (Server._instance != null)
+        {
+            Server._instance.UnregisterPlayer(this);
+        }
 
         if (me == this)
             me = null;
@@ -128,12 +146,6 @@ public class Player : NetworkBehaviour
                 r.shadowCastingMode =
                     ShadowCastingMode.ShadowsOnly;
             }
-        }
-
-        if (Server._instance != null &&
-            Server._instance.IsSpawned)
-        {
-            Server._instance.ConnectPlayer_RPC(NetworkObjectId);
         }
 
         InitializePostProcessing();
@@ -166,23 +178,11 @@ public class Player : NetworkBehaviour
         }
     }
 
-    public override void OnNetworkPreDespawn()
-    {
-        if (IsOwner &&
-            Server._instance != null &&
-            Server._instance.IsSpawned)
-        {
-            Server._instance.DisconnectPlayer_RPC(NetworkObjectId);
-        }
-
-        base.OnNetworkPreDespawn();
-    }
-
     // ==========================================
     // IMPACT DAMAGE
     // ==========================================
 
-    private void OnCollisionEnter(Collision collision)
+    public void ApplyImpact(Collision collision, Rigidbody impactBody = null)
     {
         if (!IsOwner || _isDead)
             return;
@@ -190,7 +190,11 @@ public class Player : NetworkBehaviour
         if (_movement == null || _movement.rb == null)
             return;
 
-        Rigidbody rb = _movement.rb;
+        Rigidbody rb = impactBody;
+        if (rb == null)
+        {
+            rb = _movement.rb;
+        }
 
         // Impulse-based damage requires a dynamic Rigidbody.
         if (rb.isKinematic)
@@ -234,33 +238,37 @@ public class Player : NetworkBehaviour
         if (!IsSpawned || damage <= 0f)
             return;
 
-        if (IsOwner)
-        {
-            ApplyDamage(damage);
-        }
-        else
-        {
-            Damage_RPC(damage);
-        }
+        Damage_RPC(damage);
     }
 
     [Rpc(
-        SendTo.Owner,
+        SendTo.Server,
         InvokePermission = RpcInvokePermission.Everyone
     )]
-    public void Damage_RPC(float damage)
+    public void Damage_RPC(float damage, RpcParams rpcParams = default)
     {
+        ulong sender = rpcParams.Receive.SenderClientId;
+        if (sender != OwnerClientId && sender != Unity.Netcode.NetworkManager.ServerClientId)
+        {
+            return;
+        }
+
         ApplyDamage(damage);
     }
 
     private void ApplyDamage(float damage)
     {
-        if (!IsOwner || _isDead || damage <= 0f)
+        if (!IsServer || _isDead || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage))
+        {
             return;
+        }
+
+        if (GameManager._instance == null || !GameManager._instance.IsSeeking)
+        {
+            return;
+        }
 
         health.Value = Mathf.Max(0f, health.Value - damage);
-
-        ShakeCamera(2f, 3f, 0.1f, 0.5f);
 
         if (health.Value <= 0f)
         {
@@ -271,7 +279,13 @@ public class Player : NetworkBehaviour
     private void OnHealthChanged(float previous, float current)
     {
         if (IsOwner)
+        {
             UpdateHealthVignette(current);
+            if (current < previous)
+            {
+                ShakeCamera(2f, 3f, 0.1f, 0.5f);
+            }
+        }
     }
 
     // ==========================================
@@ -373,35 +387,41 @@ public class Player : NetworkBehaviour
     // Death synchronization is now handled by a NetworkVariable.
     public void SetDeathState_RPC(bool state)
     {
-        Instantiate(deathGFX, transform.position, Quaternion.identity);
-
-        if (!IsOwner || !IsSpawned)
+        if (!IsServer || !IsSpawned || networkIsDead.Value == state)
+        {
             return;
-
-        if (networkIsDead.Value == state)
-            return;
-
-        Instantiate(deathGFX, transform.position, transform.rotation);
+        }
 
         networkIsDead.Value = state;
-
-        // Report a kill only when transitioning
-        // from alive to dead.
         if (state && GameManager._instance != null)
         {
-            GameManager._instance.OnHiderDeath_RPC(
-                NetworkObjectId
-            );
+            GameManager._instance.OnHiderDeath_RPC(NetworkObjectId);
         }
     }
 
     private void OnDeathStateChanged(bool previous, bool current)
     {
         ApplyDeathState(current);
+        if (current && !previous && deathGFX != null)
+        {
+            Vector3 position = transform.position;
+            if (_movement != null)
+            {
+                position = _movement.transform.position;
+            }
+
+            Instantiate(deathGFX, position, Quaternion.identity);
+        }
+    }
+
+    private void OnWaitingChanged(bool previous, bool current)
+    {
+        ApplyDeathState(networkIsDead.Value);
     }
 
     private void ApplyDeathState(bool state)
     {
+        state = state || waitingForRound.Value;
         _isDead = state;
 
         // Spectator camera is LOCAL ONLY.
@@ -435,11 +455,20 @@ public class Player : NetworkBehaviour
 
     public void OnReset()
     {
-        if (!IsOwner)
+        if (!IsServer || GameManager._instance == null || GameManager._instance.CurrentPhase != GamePhase.Lobby)
+        {
             return;
+        }
 
         health.Value = 100f;
+        waitingForRound.Value = false;
         SetDeathState_RPC(false);
+        ResetOwnerRpc();
+    }
+
+    [Rpc(SendTo.Owner, InvokePermission = RpcInvokePermission.Server)]
+    private void ResetOwnerRpc()
+    {
         SetVignette(0f);
 
         // Reset invisibility.
@@ -514,6 +543,11 @@ public class Player : NetworkBehaviour
 
     private void Update()
     {
+        if (IsServer && !_isDead && _movement != null && _movement.transform.position.y < -100f)
+        {
+            ApplyDamage(100f);
+        }
+
         if (!IsOwner || _isDead ||
             _input == null || !_input.enabled)
             return;
@@ -602,7 +636,7 @@ public class Player : NetworkBehaviour
             NetworkManager.SpawnManager.InstantiateAndSpawn(
                 poop.GetComponent<NetworkObject>(),
                 0,
-                false,
+                true,
                 false,
                 false,
                 poopSpawnLocation.position,

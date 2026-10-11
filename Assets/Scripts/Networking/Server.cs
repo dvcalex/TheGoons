@@ -1,133 +1,91 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
-using System;
-using System.Linq;
+using UnityEngine;
 
+// Each peer learns the roster from the player objects Netcode spawns/despawns.
 public class Server : NetworkBehaviour
 {
     public static Server _instance;
-    
     public List<Player> _players = new List<Player>();
-
     public Action onPlayerListUpdated;
-
-    private void Start()
-    {
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-
-        onPlayerListUpdated += PlayerListUpdated;
-    }
-
-    private void OnDestroy()
-    {
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
-            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
-        }
-
-        onPlayerListUpdated -= PlayerListUpdated;
-    }
 
     private void Awake()
     {
-        if (_instance == null)
-            _instance = this;
-        else
+        if (_instance != null && _instance != this)
+        {
             Destroy(gameObject);
-    }
-
-    private void OnClientConnected(ulong obj)
-    {
-        Debug.Log($"Client connected: {obj}");
-    }
-
-    private void OnClientDisconnected(ulong obj)
-    {
-        Debug.Log($"Client disconnected: {obj}");
-    }
-
-    private void PlayerListUpdated()
-    {
-        Debug.Log($"Player list updated: {_players.Count} players connected.");
-
-        if(IsServer)
-            SyncPlayers_RPC(GetPlayerIds());
-    }
-
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    public void ConnectPlayer_RPC(ulong networkObjId)
-    {
-        NetworkObject obj = NetworkManager.Singleton.SpawnManager.SpawnedObjects[networkObjId];
-
-        Player player = obj.GetComponent<Player>();
-
-        if(_players.Contains(_players.Find(p => p.NetworkObjectId == networkObjId)))
             return;
+        }
+
+        _instance = this;
+    }
+
+    public void RegisterPlayer(Player player)
+    {
+        _players.RemoveAll(entry => entry == null);
+        if (player == null || _players.Contains(player))
+        {
+            return;
+        }
 
         _players.Add(player);
         onPlayerListUpdated?.Invoke();
     }
 
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    public void DisconnectPlayer_RPC(ulong networkObjId)
+    public void UnregisterPlayer(Player player)
     {
-        NetworkObject obj = NetworkManager.Singleton.SpawnManager.SpawnedObjects[networkObjId];
-
-        Player player = obj.GetComponent<Player>();
-
-        if (!_players.Contains(_players.Find(p => p.NetworkObjectId == networkObjId)))
-            return;
-
-        _players.Remove(player);
-        onPlayerListUpdated?.Invoke();
-    }
-
-    [Rpc(SendTo.NotServer, InvokePermission = RpcInvokePermission.Server)]
-    public void SyncPlayers_RPC(ulong[] playerIds)
-    {
-        if (IsServer) // Should never be encountered, purely a last resort check to prevent an infintie recursive loop
-            return;
-
-        _players.Clear();
-
-        foreach (ulong id in playerIds)
+        if (_players.Remove(player))
         {
-            NetworkObject obj = NetworkManager.Singleton.SpawnManager.SpawnedObjects[id];
-            Player player = obj.GetComponent<Player>();
-            _players.Add(player);
+            onPlayerListUpdated?.Invoke();
         }
-
-        onPlayerListUpdated?.Invoke();
     }
 
-    // ---------- Helper Methods ----------
+    public List<Player> GetAllPlayers()
+    {
+        _players.RemoveAll(player => player == null);
+        return _players;
+    }
 
-    public List<Player> GetAllPlayers() => _players;
-    
     public List<Player> GetClientPlayers()
     {
-        List<Player> resultSet = new List<Player>();
+        List<Player> players = new List<Player>();
+        foreach (Player player in GetAllPlayers())
+        {
+            if (player.OwnerClientId != Unity.Netcode.NetworkManager.ServerClientId)
+            {
+                players.Add(player);
+            }
+        }
 
-        resultSet.AddRange(_players.Where(x=> (x.OwnerClientId != NetworkManager.ServerClientId)));
-
-        return resultSet;
+        return players;
     }
 
-    public Player GetHostPlayer() => _players.Find(p => p.OwnerClientId == NetworkManager.ServerClientId);
-
-    public int GetPlayerCount() => _players.Count;
-    public ulong[] GetPlayerIds()
+    public Player GetHostPlayer()
     {
-        ulong[] playerIds = new ulong[_players.Count];
+        foreach (Player player in GetAllPlayers())
+        {
+            if (player.OwnerClientId == Unity.Netcode.NetworkManager.ServerClientId)
+            {
+                return player;
+            }
+        }
 
-        for (int i = 0; i < _players.Count; i++)
-            playerIds[i] = _players[i].NetworkObjectId;
-
-        return playerIds;
+        return null;
     }
 
+    public int GetPlayerCount()
+    {
+        return GetAllPlayers().Count;
+    }
 
+    public override void OnDestroy()
+    {
+        if (_instance == this)
+        {
+            _instance = null;
+        }
+
+        base.OnDestroy();
+    }
 }

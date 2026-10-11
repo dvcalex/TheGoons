@@ -139,6 +139,8 @@ public class RelayManager : MonoBehaviour
         {
             if (!enableOnline)
             {
+                var transport = NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+                transport.SetConnectionData(transport.ConnectionData.Address, transport.ConnectionData.Port);
                 if (!NetworkManager.Singleton.StartHost())
                 {
                     throw new System.InvalidOperationException("Local host could not start.");
