@@ -118,7 +118,7 @@ namespace TrollPresentation.Editor
                 }
                 PrefabUtility.SaveAsPrefabAsset(root,Root+"Prefabs/Troll"+name+".prefab");UnityEngine.Object.DestroyImmediate(root);
             }
-            const string rigPath="Assets/Art/TrollRig/Prefabs/TrollRig.prefab";
+            const string rigPath="Assets/Prefabs/TrollRig.prefab";
             var rig=PrefabUtility.LoadPrefabContents(rigPath);
             try {
                 foreach(var limb in rig.GetComponentsInChildren<MechLab.ServoLimb>(true)) {

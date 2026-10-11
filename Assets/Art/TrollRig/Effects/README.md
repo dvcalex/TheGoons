@@ -1,6 +1,6 @@
 # Troll contact effects
 
-Two small effects are wired to both hands of `../Prefabs/TrollRig.prefab`:
+Two small effects are wired to both hands of `Assets/Prefabs/TrollRig.prefab`:
 
 - **TrollImpact**: a brief burst on a sufficiently fast hand contact.
 - **TrollDust**: a small dust puff when the hand strikes a static upward-facing surface.
