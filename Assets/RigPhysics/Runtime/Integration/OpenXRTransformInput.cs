@@ -48,6 +48,16 @@ namespace MechLab
 
             rig.UseExternalInput(true);
             headValid &= focused && !paused;
+            if (rig.physicalHead != null)
+            {
+                rig.physicalHead.localRotation = Quaternion.Inverse(trackingSpace.rotation) * head.rotation;
+            }
+
+            if (rig.slew != null)
+            {
+                rig.slew.view = head;
+            }
+
             Feed(rig.leftHand, leftController, leftGrip, headValid, leftValid);
             Feed(rig.rightHand, rightController, rightGrip, headValid, rightValid);
         }

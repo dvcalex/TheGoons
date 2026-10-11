@@ -1,35 +1,57 @@
 # TrollRig
 
-Drag Prefabs/TrollRig.prefab into a test scene. This is the assembled VR rig prefab: troll head, both visual arms and hands, and the existing physics, input, grabbing, and IK components. Use this prefab as the integration target for Host_Player. Its source models, materials, and tuning profiles remain shared asset dependencies.
+Use `Assets/Prefabs/Host_Player.prefab` for the networked VR host. Its owner enables the nested `Assets/Prefabs/TrollRig.prefab` and binds the XR tracking space. Remote players render the real head and Scout arms from three head/hand poses and two byte-sized grip values. Their XR Origin, motors, colliders and contact effects stay disabled; the arm solver stays active.
 
-The upper arms and forearms are tapered capsule meshes. They are children of the existing visual arm bones, driven by HumanoidArmIK. Mirrored curled hands are children of the physical fists. Fingers are fixed geometry, not individually animated. No new runtime scripts or colliders are required.
+## Runtime
 
-The smooth troll head is attached to Chassis as an optional visual. It follows Chassis, not the headset directly. Hide Troll Head Visual when using these arms in a first-person player if the head obstructs the camera. This is a floating-head-and-arms prototype, not a complete humanoid body.
+- `VrRigController`: reads XR poses directly, maps hand reach, drives the physical head, and moves the chassis with the left thumbstick.
+- `VrPhysicsHand` on each fist: applies PID forces/torque, handles grip-to-grab and release. The Rigidbody stays dynamic and collides with the world.
+- `VrPidMotor` / `VrPidController`: the force controller adapted from Jalopy-Jetstream. Integral gain defaults to zero so contacts do not accumulate stored force.
+- `ScoutArms`: two-bone visual arms and analog grip-driven finger curl.
+- `TrollContactEffects`: pooled contact particles, with no gameplay control.
 
-Original physics shapes are retained: visual surfaces, especially arm bulges and fingers, do not exactly match collision surfaces. Test reach, grip alignment, and first-person camera visibility in your actual desktop/VR player setup before replacing a gameplay prefab.
+The TrollRig prefab no longer uses the legacy MechLab arm joints, proxies, elbow physics, surface-pulling motor, or its large tuning profiles. The shared MechLab library remains for other assets. Arm bones are visual only; the physical bodies are the chassis, head and two hands.
 
-Models contains the editable source FBX parts. Materials reuse Assets/Art/TrollHead. The TrollRig prefab also depends on the existing RigPhysics scripts, profiles and audio. Keep those folders when moving this prototype.
+There is no desktop VR test mode, fake tracking, or automatic diagnostic overlay. VRTest retains its ground and rig placement only; use the real Host_Player with tracked controllers to drive the rig.
 
-Validation: inspected a Unity render; both visual IK chains solved three wrist poses; rigidbody, collider and joint counts match the original rig. This is not a headset/play-mode physics validation.
+## Controls
 
-## Host_Player integration
+Left thumbstick travels along the headset's forward/right plane, including up/down. Release to brake and hold altitude. Tracking loss releases the motors and requires a neutral stick before travel resumes. Grip squeezes/grabs; release lets the prop retain its physical velocity. Grabbable objects must have a dynamic Rigidbody on a layer included in each hand's Grabbable Layers mask, within the configured mass limit. One hand owns a prop at a time.
 
-`Assets/Prefabs/Host_Player.prefab` contains a nested TrollRig instance. Its XR Origin is a child of the rig's TrackingFloor, at unit scale with a zero local pose. TrackingRootFollower carries the camera with the physical chassis; SurfacePullMotor retains the rig's existing hand-contact locomotion.
+Y toggles the shared VR UI. B requests runtime tracking recenter and repositions the menu; support depends on the headset's tracking mode. These actions are provided by VrMenuPresenter in the normal startup flow.
 
-OpenXRTransformInput on XR Origin reads Camera, Left Controller and Right Controller in Camera Offset space. Both PilotPoseStreams use scripted input in this instance, so the adapter is the only pose writer. Keep the tracked controllers enabled; their old placeholder cubes are disabled.
+Tune reach, forward offset and movement on VrRigController. Tune force response on VrPhysicsHand.motor. Distances and linear motion settings are authored at scale 1 and automatically follow the TrollRig root scale.
 
-LocalVrPlayer activates the physics rig and XR Origin only for the owner and hides the local head visual. Remote players still see the existing replicated head/hand markers; this integration does not replicate the physical troll limbs, grabs or effects. Use the existing host/network debug flow to spawn the player. Moving the Host_Player container during simulation is not a teleport procedure for its separate rigidbodies.
+At scale 1, hands use 5x head-relative reach plus a 2.5 m forward offset, limited to 7 m from each shoulder. A controller 0.4 m ahead of your head requests roughly 4.5 m of forward reach. Both hands use the same mapping, so there are no mirrored lateral offsets that cross them.
 
-Validation: C# build and serialized prefab-reference checks passed. Unity play-mode and headset tracking, contact, grip and camera comfort still need testing.
+## Scout arm asset
 
-## Giant arms (3x)
+`Assets/Art/SK_Scout.fbx` is preserved unchanged. It contains arm geometry and a skeleton, but Unity imports it with no skin weights or bind poses. `ScoutArms.prefab` and `ScoutArms_Skinned.asset` are derived assets: 860 vertices bound to 36 arm/finger bones, with upper arms and forearms extended to 3.6 m each. The original hands retain their proportions. Skin weights were generated from bone-segment proximity; they are an initial binding, not artist-authored weights.
 
-TrollRig now has upper-arm and forearm joint lengths of 1.95 m each (3.9 m total reach), 0.27 m arm collision radii, and 0.42 m fist collision radii. The physical and visual arms and hands are enlarged around their existing shoulder mounts. Root, chassis, head, tracking floor, and visual-bone scales are not globally enlarged. Spawn at unit root scale.
+Each hand has 15 finger joints. Grip smoothly adds local finger flexion; thumb flexion is reduced. Visual wrists follow the physical hands, and shoulders follow headset yaw. The original capsule arms and fixed curled-hand meshes are removed from TrollRig. The source model had no supplied texture; the derived material uses a plain skin tone.
 
-The saved rest pose opens the fists to 1.3 m center-to-center, avoiding the interpenetration caused by simply scaling the original pose. All six structural joint anchors coincide and the arm colliders clear the spawn floor. Joint projection tolerances and collider contact offsets are scaled with arm geometry.
+Validated in Unity: four rigidbodies, no permanent arm joints, intact Host_Player references, open/closed finger deformation, visual wrist alignment, PID settling for 8 kg and 80 kg bodies, and a hand blocked by a static wall. Compilation also passed. A fresh headset build is still needed to judge comfort, reach and grab feel.
 
-Profiles/TrollArms3x.asset is the rig-level profile. Left and Right profiles have separate controller pivots so each amplified target equals shoulder + 3 * (the original target - shoulder). Head translation remains one-to-one and tracking-loss thresholds remain in real controller metres. All per-arm consumers share that arm's profile. The original DragDrop profile is unchanged.
+## Hand alignment and contact
 
-Linear target/speed and servo force caps are 3x; angular servo/guide torque and angular limit springs/damping are 9x to account for the larger lever arms and inertia. Grab search and break distances are enlarged. Body/limb masses, damage, maximum grabbable mass, and throw caps retain the existing gameplay values; this is not a 27x density/mass scaling. Body locomotion speed caps remain unchanged.
+Select LeftFist or RightFist in TrollRig prefab isolation. On VrPhysicsHand, Use Controller Aim makes the open fingers follow the same pointing direction as the controller ray. Controller Rotation Offset adds pitch/yaw/roll in that frame; change it to tune your controller grip. The offset rotates the Rigidbody target, collider and visual together. The baked Scout handRotationOffset only converts the model's bone axes and should normally stay unchanged.
 
-Validated: joint alignment, 3x physical/visual lengths, non-overlapping rest fists, floor clearance, controller mapping under head translation, and unit tracking/root scales. An editor-only isolated physics attempt did not establish stable runtime tracking and also failed on the unmodified baseline rig; do not treat it as a passed play-mode test. Live desktop/VR motion, grabs and contact recovery still need play-mode validation.
+Each hand has a forward-facing capsule covering its palm and knuckle region instead of a wrist-centred sphere. Grab Point is inside the palm; the yellow selection gizmo shows its search radius, and the cyan ray shows physical hand forward. Grabs select the closest prop surface to the palm and anchor both bodies at that contact without snapping the prop to the wrist. Contacted props remain within grab range with the current defaults. Individual fingers are visual, not separate physics colliders.
+
+## Scaling in the editor
+
+Open `Assets/Prefabs/TrollRig.prefab` in prefab isolation, select the root, and set Transform Scale X, Y and Z to the same positive value. The current scale is **12, 12, 12**. Keep Host_Player and the XR Origin at local scale 1; the nested rig supplies the scale. Change scale before entering Play mode, rather than resizing active Rigidbody bodies. Scene instances with scale overrides must have those overrides reverted to inherit the prefab scale.
+
+Mesh geometry, arm bones, colliders, local palm anchors and tracked poses inherit the transform scale. Runtime code scales shoulder/floor offsets, forward reach, reach limits, slew speed/acceleration, linear PID acceleration limits, hand speed, grab radius, contact effects, UI size/distance/rays and remote pose markers. Do not multiply the Inspector tuning values again. The dimensionless 5x reach multiplier, rotation settings, grip thresholds and timing stay unchanged. At scale 12, the 2.5 m forward bias becomes 30 world metres and the 7 m shoulder reach limit becomes 84 world metres.
+
+Body masses and maximum grabbable mass intentionally retain their gameplay tuning; scaling does not apply a 1728x density-based mass increase. Grab break force scales linearly with acceleration and break torque quadratically with acceleration and lever length. Unity recalculates automatic inertia from the enlarged colliders. Gravity stays at the world's gravity.
+
+Uniform root scaling is required: nonuniform or negative scale is not supported. Unity's Transform alone cannot scale scripted world-space distances, which is why those values explicitly read the rig's scale. No additional editor component is required.
+
+## Networked desktop grabs
+
+DesktopPlayer has a `PlayerGrab` component on its network root. The VR host selects nearby Player-layer capsules, including kinematic network replicas. It replicates the holding hand and attachment offset once when a grab starts, then releases with a capped throw velocity. A second hand cannot take an already held player. Tracking loss, hand disable or host despawn releases the grab.
+
+The desktop owner keeps authority over its movement body. While held, a PID motor follows the existing replicated hand pose; walking, jumping, dashing and manual ragdoll toggles stop. The player can still look around, and world collisions remain active. Its existing NetworkTransform replicates movement to everyone else. This avoids an ownership handoff, a networked joint, and another continuous pose stream. Network latency can add some follow lag. Already-ragdolled players are not grabbable by this capsule-based system.
+
+Host hand impacts also send a capped knockback to the desktop owner. `Maximum Throw Speed` on PlayerGrab limits both throws and hits (25 m/s by default). Grabbing uses the hands' existing Grabbable Layers mask, which includes Player. Both host and clients must use the updated scripts and DesktopPlayer prefab.
