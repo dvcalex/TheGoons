@@ -85,6 +85,20 @@ namespace MechLab
             wrist.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             wrist.solverIterations = tuning.solverPasses;
             wrist.solverVelocityIterations = tuning.velocityPasses;
+            if (segments != null)
+            {
+                foreach (Rigidbody segment in segments)
+                {
+                    if (segment != null)
+                    {
+                        segment.solverIterations = tuning.solverPasses;
+                        segment.solverVelocityIterations = tuning.velocityPasses;
+                        segment.interpolation = RigidbodyInterpolation.Interpolate;
+                        segment.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                    }
+                }
+            }
+
             var node = new GameObject(name + " pose proxy");
             node.transform.SetPositionAndRotation(wrist.position, wrist.rotation);
             proxy = node.AddComponent<Rigidbody>();
@@ -162,9 +176,31 @@ namespace MechLab
 
             float load = grip ? grip.supportedMass : 0f;
             carriedMass += load;
+            float forceLimit = tuning.maximumServoForce;
+            float torqueLimit = tuning.maximumServoTorque;
+            if (tuning.responsiveArmDrives)
+            {
+                // Keep the same response when real arm masses or the held load increase.
+                float referenceMass = Mathf.Max(0.1f, tuning.wristMass);
+                if (segments != null)
+                {
+                    foreach (Rigidbody segment in segments)
+                    {
+                        if (segment != null)
+                        {
+                            referenceMass += Mathf.Max(0.1f, tuning.segmentMass);
+                        }
+                    }
+                }
+
+                float loadScale = Mathf.Max(1f, carriedMass / referenceMass);
+                forceLimit *= loadScale;
+                torqueLimit *= loadScale;
+            }
+
             // Powered arms support gravity, but still accelerate real masses and yield to contacts.
             float support = active ? Mathf.Clamp01(tuning.armGravitySupport * recovery) : 0f;
-            support *= Mathf.Min(1f, tuning.maximumServoForce / Mathf.Max(1f, carriedMass * Physics.gravity.magnitude));
+            support *= Mathf.Min(1f, forceLimit / Mathf.Max(1f, carriedMass * Physics.gravity.magnitude));
             SupportGravity(wrist, support);
             if (segments != null)
             {
@@ -174,11 +210,11 @@ namespace MechLab
                 }
             }
 
-            JointDrive positional = PhysicsMath.Drive(
+            JointDrive positional = ArmDrive(
                 carriedMass,
                 tuning.positionFrequency * Mathf.Sqrt(impactRecovery),
                 tuning.positionDampingRatio,
-                tuning.maximumServoForce * authority,
+                forceLimit * authority,
                 dt
             );
             servo.xDrive = servo.yDrive = servo.zDrive = positional;
@@ -204,11 +240,11 @@ namespace MechLab
                     + load * (grip.heldBody.worldCenterOfMass - wrist.worldCenterOfMass).sqrMagnitude;
             }
 
-            servo.slerpDrive = PhysicsMath.Drive(
+            servo.slerpDrive = ArmDrive(
                 inertia,
                 tuning.rotationFrequency,
                 tuning.rotationDampingRatio,
-                tuning.maximumServoTorque * authority,
+                torqueLimit * authority,
                 dt
             );
             constraintError = Vector3.Distance(wrist.position, targetPosition);
@@ -220,6 +256,20 @@ namespace MechLab
                     PhysicsMath.Limit(segment, tuning.maximumArmSpeed, tuning.maximumArmSpin);
                 }
             }
+        }
+
+        private JointDrive ArmDrive(float effectiveMass, float frequency, float damping, float limit, float dt)
+        {
+            if (tuning.responsiveArmDrives)
+            {
+                // PhysX computes the force needed for the connected bodies' effective mass/inertia.
+                // Acceleration-drive spring coefficients must not be multiplied by mass again.
+                JointDrive drive = PhysicsMath.Drive(1f, frequency, damping, limit, dt);
+                drive.useAcceleration = true;
+                return drive;
+            }
+
+            return PhysicsMath.Drive(effectiveMass, frequency, damping, limit, dt);
         }
 
         private static void SupportGravity(Rigidbody body, float support)
