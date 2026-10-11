@@ -48,6 +48,8 @@ public class Player : NetworkBehaviour
 
     private Vignette vignette;
 
+    Vector3 lastVelocity;
+
 
     private void Start()
     {
@@ -162,6 +164,8 @@ public class Player : NetworkBehaviour
                 isCoolingDown = false;
             }
         }
+
+        lastVelocity = _movement.rb.linearVelocity;
     }
 
     private void Update()
@@ -236,9 +240,16 @@ public class Player : NetworkBehaviour
     public void Damage_RPC(float damage)
     {
         health.Value -= damage;
+        SetVignette(1f - (Mathf.Clamp(health.Value, 0f, 100f) / 100f));
 
-        if(IsOwner)
-            SetVignette(1f - (Mathf.Clamp(health.Value, 0f, 100f) / 100f));
+        if (health.Value <= 0f)
+            SetDeathState_RPC(true);
+    }
+
+    public void Damage(float damage)
+    {
+        health.Value -= damage;
+        SetVignette(1f - (Mathf.Clamp(health.Value, 0f, 100f) / 100f));
 
         if (health.Value <= 0f)
             SetDeathState_RPC(true);
@@ -268,6 +279,19 @@ public class Player : NetworkBehaviour
         if (vignette != null)
         {
             vignette.intensity.value = Mathf.Clamp01(intensity);
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (!IsOwner)
+            return;
+
+        Vector3 velocityNow = _movement.rb.linearVelocity;
+
+        if (Mathf.Abs((velocityNow - lastVelocity).magnitude) > 5f)
+        {
+            Damage(34f);
         }
     }
 }
