@@ -38,6 +38,7 @@ public class Player : NetworkBehaviour
 
     public GameObject poop;
     public Transform poopSpawnLocation;
+    public GameObject deathGFX;
 
     [Space]
     public Component[] componentsToDestroy_Other;
@@ -134,6 +135,7 @@ public class Player : NetworkBehaviour
             Server._instance.ConnectPlayer_RPC(NetworkObjectId);
         }
 
+        transform.position = PlayerSpawn._instance.transform.position;
         InitializePostProcessing();
     }
 
@@ -371,6 +373,8 @@ public class Player : NetworkBehaviour
     // Death synchronization is now handled by a NetworkVariable.
     public void SetDeathState_RPC(bool state)
     {
+        Instantiate(deathGFX, transform.position, Quaternion.identity);
+
         if (!IsOwner || !IsSpawned)
             return;
 
