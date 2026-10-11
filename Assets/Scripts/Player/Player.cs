@@ -1,10 +1,16 @@
-using UnityEngine;
-using Unity.Netcode;
-using UnityEngine.InputSystem;
 using EZCameraShake;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class Player : NetworkBehaviour
 {
+    public NetworkVariable<float> health = new NetworkVariable<float>(100f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    public bool _isDead;
+
     public static Player me;
     public PlayerInput _input;
     public PlayerMovement _movement;
@@ -23,6 +29,10 @@ public class Player : NetworkBehaviour
     public GameObject[] objects_Disable_Local;
     public Renderer[] renderers_ShadowsOnly_Local;
 
+    [Space]
+    public GameObject[] onDeathObjs;
+    public GameObject spectatorObj;
+
     [Header("Invisibility Ability")]
     public float invisDuration = 5f; // Set this to 5 seconds
     public float invisCooldownTime = 12f; // Cooldown starts AFTER invisibility ends
@@ -33,6 +43,13 @@ public class Player : NetworkBehaviour
 
     [Header("Invisibility Renderers")]
     public SkinnedMeshRenderer[] stealthRenderers; // Drag your 4 skinned mesh renderers here in the Inspector
+
+    public Volume volume;
+
+    private Vignette vignette;
+
+    Vector3 lastVelocity;
+
 
     private void Start()
     {
@@ -66,6 +83,13 @@ public class Player : NetworkBehaviour
         }
 
         Server._instance.ConnectPlayer_RPC(NetworkObjectId);
+
+        if (volume.profile.TryGet(out vignette))
+        {
+            vignette.intensity.overrideState = true;
+        }
+
+        spectatorObj.SetActive(false);
     }
 
     public void InitOther()
@@ -84,6 +108,8 @@ public class Player : NetworkBehaviour
         {
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         }
+
+        spectatorObj.SetActive(false);
     }
 
     public override void OnNetworkPreDespawn()
@@ -142,6 +168,8 @@ public class Player : NetworkBehaviour
                 isCoolingDown = false;
             }
         }
+
+        lastVelocity = _movement.rb.linearVelocity;
     }
 
     private void Update()
@@ -152,6 +180,9 @@ public class Player : NetworkBehaviour
             {
                 _ragdollManager.SetRagdoll(!_ragdollManager.isRagdoll);
             }
+
+            if (Keyboard.current.fKey.wasPressedThisFrame)
+                Damage(34f);
 
             // Check input for Invisibility ability
             if (_input.actions["InvisAbility"] != null && _input.actions["InvisAbility"].WasPressedThisFrame())
@@ -172,6 +203,8 @@ public class Player : NetworkBehaviour
         isInvisible = true;
         invisActiveTimer = invisDuration;
         SetInvisibility(true);
+
+        ShakeCamera(1f, 3f, 0.1f, 0.5f);
 
         // ---> GRAY OUT UI ICON WHILE ACTIVE <---
         if (_logic != null)
@@ -200,7 +233,10 @@ public class Player : NetworkBehaviour
     public void TURDMECHANICWHATTHEFUCKKKKKKKKKHOOLYSHITTURDMECHANIC()
     {
         if (Random.Range(0f, 1f) < 0.05f)
+        {
+            ShakeCamera(1f, 3f, 0.1f, 0.5f);
             FuckingPoop_RPC();
+        }
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
@@ -210,5 +246,75 @@ public class Player : NetworkBehaviour
 
         obj.GetComponent<Rigidbody>().AddForce((obj.transform.position - transform.position).normalized, ForceMode.Impulse);
         obj.GetComponent<Rigidbody>().AddTorque(obj.transform.forward, ForceMode.Impulse);
+    }
+
+    [Rpc(SendTo.Owner, InvokePermission = RpcInvokePermission.Everyone)]
+    public void Damage_RPC(float damage)
+    {
+        health.Value -= damage;
+        SetVignette(Mathf.Clamp(health.Value, 0f, 100f) / 100f);
+
+        ShakeCamera(1f, 3f, 0.1f, 0.5f);
+
+        if (health.Value <= 0f)
+            SetDeathState_RPC(true);
+    }
+
+    public void Damage(float damage)
+    {
+        health.Value -= damage;
+        SetVignette(1f - (Mathf.Clamp(health.Value, 0f, 100f) / 100f));
+
+        if (health.Value <= 0f)
+            SetDeathState_RPC(true);
+    }
+
+    public void OnReset()
+    {
+        SetDeathState_RPC(false);
+    }
+
+    [Rpc(SendTo.Everyone, InvokePermission = RpcInvokePermission.Owner)]
+    public void SetDeathState_RPC(bool state)
+    {
+        if (IsOwner)
+        {
+            GameManager._instance.OnHiderDeath_RPC(NetworkObjectId);
+        }
+       
+        Debug.Log("DEATH");
+        // Player has died
+
+        spectatorObj.SetActive(state);
+        spectatorObj.transform.position = _movement.transform.position;
+
+        //foreach (GameObject obj in spectatorObjs)
+        //    obj.SetActive(state);
+
+        foreach (GameObject obj in onDeathObjs)
+            obj.SetActive(!state);
+
+        _isDead = state;
+    }
+
+    public void SetVignette(float intensity)
+    {
+        if (vignette != null)
+        {
+            vignette.intensity.value = Mathf.Clamp01(intensity);
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (!IsOwner)
+            return;
+
+        Vector3 velocityNow = _movement.rb.linearVelocity;
+
+        if (Mathf.Abs((velocityNow - lastVelocity).magnitude) > 5f)
+        {
+            Damage(34f);
+        }
     }
 }

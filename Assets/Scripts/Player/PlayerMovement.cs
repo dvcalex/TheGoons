@@ -278,7 +278,7 @@ public class PlayerMovement : NetworkBehaviour
         //Debug.Log("Ragdoll State: " + Player.me._ragdollManager.isRagdoll);
         anim.SetBool("Enabled", !Player.me._ragdollManager.isRagdoll);
 
-        if (!HasControl || _player._input == null || !_player._input.enabled || Player.me._ragdollManager.isRagdoll)
+        if (!HasControl || _player._input == null || !_player._input.enabled || Player.me._ragdollManager.isRagdoll || Player.me._isDead)
         {
             moveInput = Vector2.zero;
             return;
@@ -537,6 +537,8 @@ public class PlayerMovement : NetworkBehaviour
         Vector3 targetVelocity = dashDirection * dashSpeed;
         Vector3 velocityChange = targetVelocity - new Vector3(velocity.x, 0f, velocity.z);
         rb.AddForce(velocityChange, ForceMode.VelocityChange);
+
+        Player.me.ShakeCamera(1f, 3f, 0.1f, 0.5f);
 
         if (ragdoll != null)
         {
