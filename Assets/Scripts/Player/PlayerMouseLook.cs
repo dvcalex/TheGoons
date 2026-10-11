@@ -76,6 +76,9 @@ public class PlayerMouseLook : NetworkBehaviour
         if (disabled)
             return;
 
+        if (Player.me._ragdollManager.isRagdoll)
+            return;
+
         //if (Player.me != null && Player.me._pause.isPaused)
         //    return;
 
