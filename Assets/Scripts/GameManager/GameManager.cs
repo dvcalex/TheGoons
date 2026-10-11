@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public enum GamePhase
 {
@@ -78,6 +77,7 @@ public class GameManager : MonoBehaviour
     [Header("Optional UI")]
     public TextMeshProUGUI timerText;
     public TextMeshProUGUI hidersCountText;
+    public TextMeshProUGUI lobbyCodeText;
 
     [Header("Debug")]
     [SerializeField]

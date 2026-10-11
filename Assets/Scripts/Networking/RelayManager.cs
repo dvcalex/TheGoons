@@ -11,6 +11,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using Debug = UnityEngine.Debug;
+using Mono.Cecil.Cil;
 
 public class RelayManager : MonoBehaviour
 {
@@ -147,6 +148,7 @@ public class RelayManager : MonoBehaviour
             else
             {
                 string code = await StartHostWithRelay(10, CONNECTIONTYPE);
+                GameManager._instance.lobbyCodeText.text = code;
                 if (string.IsNullOrEmpty(code))
                 {
                     throw new System.InvalidOperationException("Relay host could not start.");
