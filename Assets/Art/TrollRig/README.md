@@ -16,7 +16,7 @@ There is no desktop VR test mode, fake tracking, or automatic diagnostic overlay
 
 ## Controls
 
-Left thumbstick travels along the headset's forward/right plane, including up/down. Release to brake and hold altitude. Tracking loss releases the motors and requires a neutral stick before travel resumes. Grip squeezes/grabs; release lets the prop retain its physical velocity. Grabbable objects must have a dynamic Rigidbody on layer 10, within the configured mass limit. One hand owns a prop at a time.
+Left thumbstick travels along the headset's forward/right plane, including up/down. Release to brake and hold altitude. Tracking loss releases the motors and requires a neutral stick before travel resumes. Grip squeezes/grabs; release lets the prop retain its physical velocity. Grabbable objects must have a dynamic Rigidbody on a layer included in each hand's Grabbable Layers mask, within the configured mass limit. One hand owns a prop at a time.
 
 Y toggles the shared VR UI. B requests runtime tracking recenter and repositions the menu; support depends on the headset's tracking mode. These actions are provided by VrMenuPresenter in the normal startup flow.
 
@@ -35,3 +35,5 @@ Validated in Unity: four rigidbodies, no permanent arm joints, intact Host_Playe
 ## Hand alignment and contact
 
 Select LeftFist or RightFist in TrollRig prefab isolation. On VrPhysicsHand, Use Controller Aim makes the open fingers follow the same pointing direction as the controller ray. Controller Rotation Offset adds pitch/yaw/roll in that frame; change it to tune your controller grip. The offset rotates the Rigidbody target, collider and visual together. The baked Scout handRotationOffset only converts the model's bone axes and should normally stay unchanged.
+
+Each hand has a forward-facing capsule covering its palm and knuckle region instead of a wrist-centred sphere. Grab Point is inside the palm; the yellow selection gizmo shows its search radius, and the cyan ray shows physical hand forward. Grabs select the closest prop surface to the palm and anchor both bodies at that contact without snapping the prop to the wrist. Contacted props remain within grab range with the current defaults. Individual fingers are visual, not separate physics colliders.

@@ -338,12 +338,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5435911188362424746}
-  - component: {fileID: 693725709970923492}
   - component: {fileID: 1689206376904624458}
   - component: {fileID: 8050443909569046169}
   - component: {fileID: 3076259739807300758}
   - component: {fileID: 8994706024712074503}
-  m_Layer: 2
+  - component: {fileID: 2737290389238365265}
+  m_Layer: 10
   m_Name: LeftFist
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -360,32 +360,11 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0.65, y: 0.6749997, z: 2.7}
-  m_LocalScale: {x: 0.84000003, y: 0.84000003, z: 0.84000003}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1498710252578475169}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!135 &693725709970923492
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3112315596985910339}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 0.42
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &1689206376904624458
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -550,11 +529,35 @@ MonoBehaviour:
   controllerRotationOffset: {x: 0, y: 0, z: 0}
   grabbableLayers:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 64
+  grabPoint: {x: 0.018400688, y: 0.15270682, z: 0.37048456}
   grabRadius: 0.5
   maximumGrabMass: 50
   grabBreakForce: 5000
   maximumSpeed: 25
+--- !u!136 &2737290389238365265
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3112315596985910339}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.1821258
+  m_Height: 0.7473573
+  m_Direction: 2
+  m_Center: {x: 0.023000859, y: 0.19088352, z: 0.27155283}
 --- !u!1 &3585284501349255097
 GameObject:
   m_ObjectHideFlags: 0
@@ -564,12 +567,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4743886927937271382}
-  - component: {fileID: 4265213321353340572}
   - component: {fileID: 3358782522006448865}
   - component: {fileID: 6758840744286974586}
   - component: {fileID: 2843125559858461584}
   - component: {fileID: 6505242123551932600}
-  m_Layer: 2
+  - component: {fileID: 6796707612971411252}
+  m_Layer: 10
   m_Name: RightFist
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -586,32 +589,11 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.65, y: 0.6749997, z: 2.7}
-  m_LocalScale: {x: 0.84000003, y: 0.84000003, z: 0.84000003}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1498710252578475169}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!135 &4265213321353340572
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3585284501349255097}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 0.42
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &3358782522006448865
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -776,11 +758,35 @@ MonoBehaviour:
   controllerRotationOffset: {x: 0, y: 0, z: 0}
   grabbableLayers:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 64
+  grabPoint: {x: -0.018396547, y: 0.15270993, z: 0.37048608}
   grabRadius: 0.5
   maximumGrabMass: 50
   grabBreakForce: 5000
   maximumSpeed: 25
+--- !u!136 &6796707612971411252
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3585284501349255097}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.18212532
+  m_Height: 0.7473582
+  m_Direction: 2
+  m_Center: {x: -0.022995684, y: 0.1908874, z: 0.27155378}
 --- !u!1001 &5975966379667684521
 PrefabInstance:
   m_ObjectHideFlags: 0

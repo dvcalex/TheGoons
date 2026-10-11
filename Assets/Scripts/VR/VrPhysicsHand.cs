@@ -10,7 +10,10 @@ public sealed class VrPhysicsHand : MonoBehaviour
     [Tooltip("Extra pitch, yaw and roll in controller space. Rotates the physical hand, collider and visual together.")]
     public Vector3 controllerRotationOffset;
 
+    [Header("Grabbing")]
     public LayerMask grabbableLayers = 1 << 10;
+    [Tooltip("Local palm position used to find grabbable objects.")]
+    public Vector3 grabPoint = new Vector3(0f, 0f, 0.4f);
     public float grabRadius = 0.5f;
     public float maximumGrabMass = 50f;
     public float grabBreakForce = 5000f;
@@ -112,9 +115,11 @@ public sealed class VrPhysicsHand : MonoBehaviour
             return;
         }
 
-        int count = Physics.OverlapSphereNonAlloc(Body.position, grabRadius, candidates, grabbableLayers, QueryTriggerInteraction.Ignore);
+        Vector3 palm = transform.TransformPoint(grabPoint);
+        int count = Physics.OverlapSphereNonAlloc(palm, grabRadius, candidates, grabbableLayers, QueryTriggerInteraction.Ignore);
         float nearestDistance = float.PositiveInfinity;
         Rigidbody nearest = null;
+        Vector3 contactPoint = palm;
         for (int i = 0; i < count; i++)
         {
             Rigidbody candidate = candidates[i].attachedRigidbody;
@@ -131,11 +136,13 @@ public sealed class VrPhysicsHand : MonoBehaviour
                 continue;
             }
 
-            float distance = (candidates[i].ClosestPoint(Body.position) - Body.position).sqrMagnitude;
+            Vector3 point = candidates[i].ClosestPoint(palm);
+            float distance = (point - palm).sqrMagnitude;
             if (distance < nearestDistance)
             {
                 nearestDistance = distance;
                 nearest = candidate;
+                contactPoint = point;
             }
         }
 
@@ -146,8 +153,10 @@ public sealed class VrPhysicsHand : MonoBehaviour
 
         heldBody = nearest;
         grabJoint = heldBody.gameObject.AddComponent<FixedJoint>();
-        grabJoint.anchor = heldBody.transform.InverseTransformPoint(Body.position);
+        grabJoint.autoConfigureConnectedAnchor = false;
+        grabJoint.anchor = heldBody.transform.InverseTransformPoint(contactPoint);
         grabJoint.connectedBody = Body;
+        grabJoint.connectedAnchor = transform.InverseTransformPoint(contactPoint);
         grabJoint.breakForce = grabBreakForce;
         grabJoint.breakTorque = grabBreakForce;
         grabJoint.enableCollision = false;
@@ -172,5 +181,13 @@ public sealed class VrPhysicsHand : MonoBehaviour
         gripReleased = false;
         motor.Reset();
         Release();
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.TransformPoint(grabPoint), grabRadius);
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawRay(transform.position, transform.forward);
     }
 }
