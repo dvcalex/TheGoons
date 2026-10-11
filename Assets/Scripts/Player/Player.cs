@@ -11,6 +11,9 @@ public class Player : NetworkBehaviour
     public PlayerRagdollManager _ragdollManager;
     public PlayerLogic _logic;
 
+    public GameObject poop;
+    public Transform poopSpawnLocation;
+
     [Space]
     public Component[] componentsToDestroy_Other;
     public GameObject[] objects_Disable_Other;
@@ -191,5 +194,21 @@ public class Player : NetworkBehaviour
                 }
             }
         }
+    }
+
+
+    public void TURDMECHANICWHATTHEFUCKKKKKKKKKHOOLYSHITTURDMECHANIC()
+    {
+        if (Random.Range(0f, 1f) < 0.05f)
+            FuckingPoop_RPC();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    public void FuckingPoop_RPC()
+    {
+        NetworkObject obj = NetworkManager.SpawnManager.InstantiateAndSpawn(poop.GetComponent<NetworkObject>(), 0, false, false, false, poopSpawnLocation.position, poopSpawnLocation.rotation);
+
+        obj.GetComponent<Rigidbody>().AddForce((obj.transform.position - transform.position).normalized, ForceMode.Impulse);
+        obj.GetComponent<Rigidbody>().AddTorque(obj.transform.forward, ForceMode.Impulse);
     }
 }
