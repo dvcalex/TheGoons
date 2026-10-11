@@ -404,6 +404,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8c67c4d6222bb145b1820b640400988, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSpawn
+  spacing: 2
+  groundClearance: 0.25
+  probeHeight: 100
+  probeDepth: 500
+  searchRings: 6
 --- !u!1001 &1176173963
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -458,7 +463,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2997808704456181508, guid: c2855949b01416747ae11eb8a2802f58, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -214
+      value: -225
       objectReference: {fileID: 0}
     - target: {fileID: 2997808704456181508, guid: c2855949b01416747ae11eb8a2802f58, type: 3}
       propertyPath: m_LocalPosition.z
