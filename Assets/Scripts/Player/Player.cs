@@ -136,18 +136,7 @@ public class Player : NetworkBehaviour
             Server._instance.ConnectPlayer_RPC(NetworkObjectId);
         }
 
-        transform.position = PlayerSpawn._instance.transform.position;
         InitializePostProcessing();
-
-        StartCoroutine(SpawnAfter());
-    }
-
-    IEnumerator SpawnAfter()
-    {
-        yield return new WaitForSeconds(0.125f);
-
-        Vector3 position = GameObject.Find("PlayerSpawn").transform.position;
-        transform.position = position;
     }
 
     public void InitOther()

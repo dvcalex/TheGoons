@@ -39,7 +39,45 @@ public class NetworkPlayer : NetworkBehaviour
             prefab = player_Client.GetComponent<NetworkObject>();
         }
 
-        yield return new WaitForSeconds(0.125f);
+        Vector3 position = Vector3.zero;
+        bool isVr = prefab.GetComponent<LocalVrPlayer>() != null;
+        bool warned = false;
+
+        while (IsSpawned && NetworkManager.ConnectedClients.ContainsKey(OwnerClientId))
+        {
+            if (isVr)
+            {
+                // The VR rig uses its own tracking-floor marker after spawning.
+                VrSpawnPoint vrSpawn = VrSpawnPoint.FindInScene(SceneManager.GetSceneByName(SharedGameSession.GameScene));
+                if (vrSpawn != null)
+                {
+                    position = vrSpawn.transform.position;
+                    break;
+                }
+            }
+            else
+            {
+                PlayerSpawn spawn = PlayerSpawn._instance;
+                if (spawn != null && spawn.gameObject.scene.name == SharedGameSession.GameScene
+                    && spawn.TryGetPosition(prefab.gameObject, out position))
+                {
+                    break;
+                }
+            }
+
+            if (!warned)
+            {
+                Debug.LogWarning("Waiting for a clear player spawn in GameplayScene.", this);
+                warned = true;
+            }
+
+            yield return new WaitForSecondsRealtime(0.25f);
+        }
+
+        if (!IsSpawned || !NetworkManager.ConnectedClients.ContainsKey(OwnerClientId))
+        {
+            yield break;
+        }
 
         NetworkObject player = NetworkManager.SpawnManager.InstantiateAndSpawn(
             prefab,
@@ -47,7 +85,7 @@ public class NetworkPlayer : NetworkBehaviour
             false,
             true,
             false,
-            Vector3.zero,
+            position,
             Quaternion.identity
         );
 
