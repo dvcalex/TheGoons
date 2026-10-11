@@ -64,19 +64,21 @@ namespace MechLab
             }
 
             Vector3 forward = input.trackingSpace.forward;
+            Vector3 right = input.trackingSpace.right;
             if (view != null)
             {
-                Vector3 headForward = Vector3.ProjectOnPlane(view.forward, Vector3.up);
-                if (headForward.sqrMagnitude > 0.01f)
-                {
-                    forward = headForward.normalized;
-                }
+                forward = view.forward;
+                right = view.right;
             }
 
-            forward = Vector3.ProjectOnPlane(forward, Vector3.up).normalized;
-            Vector3 right = Vector3.Cross(Vector3.up, forward);
             Vector3 desiredVelocity = (forward * stick.y + right * stick.x) * speed;
-            Vector3 velocity = Vector3.ProjectOnPlane(hull.body.linearVelocity, Vector3.up);
+            Vector3 velocity = hull.body.linearVelocity;
+            if (!armed)
+            {
+                // Without tracking, brake horizontal drift but allow gravity to act normally.
+                velocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
+            }
+
             float limit = acceleration;
             if (stick.sqrMagnitude < 0.0001f)
             {
@@ -84,7 +86,15 @@ namespace MechLab
             }
 
             Vector3 change = (desiredVelocity - velocity) / Mathf.Max(0.01f, responseSeconds);
-            hull.RequestForce(Vector3.ClampMagnitude(change, limit) * hull.body.mass);
+            Vector3 travelAcceleration = Vector3.ClampMagnitude(change, limit);
+
+            // Support the chassis separately so gravity does not consume the travel acceleration.
+            if (armed && hull.body.useGravity)
+            {
+                travelAcceleration -= Physics.gravity;
+            }
+
+            hull.RequestForce(travelAcceleration * hull.body.mass);
         }
 
         private void OnApplicationPause(bool value)
